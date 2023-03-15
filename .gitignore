@@ -130,5 +130,6 @@ dmypy.json
 
 #ignore all rasa file and folder
 *.yml
-/actions
-/models
+*.tar.gz
+/src/actions
+/src/models
