@@ -4,7 +4,7 @@ from rasa.core.utils import AvailableEndpoints
 from uuid import UUID
 import os
 
-DEFAULT_LOCATION = './project/'
+DEFAULT_LOCATION = './src/'
 
 def create_app() -> FastAPI:
     app = FastAPI()
@@ -25,10 +25,14 @@ def create_app() -> FastAPI:
         # Get the Rasa model's response to the user's message
         response = await agent.handle_text("message", sender_id=sender_id)
         print(response)
-        return response
+        return response,200
 
     @app.get("/")
     def default():
-        return UUID(bytes=os.urandom(16), version=4)
+        return UUID(bytes=os.urandom(16), version=4),200
+    
+    @app.get("/chat/heartbeat")
+    def heartbeat():
+        return "",200
     
     return app
