@@ -128,8 +128,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+.vscode/
+
 #ignore all rasa file and folder
 *.yml
 *.tar.gz
-/src/actions
-/src/models
+models/
