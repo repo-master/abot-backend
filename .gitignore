@@ -130,7 +130,5 @@ dmypy.json
 
 .vscode/
 
-#ignore all rasa file and folder
-*.yml
-*.tar.gz
-models/
+# Ignore all rasa files and folders
+data/
