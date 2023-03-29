@@ -1,4 +1,8 @@
-from fastapi import FastAPI, Response
+from fastapi import (
+    FastAPI,
+    Request, Response,
+    HTTPException
+)
 from fastapi.middleware.cors import CORSMiddleware
 
 from rasa.core.agent import Agent
@@ -18,7 +22,10 @@ def create_app() -> FastAPI:
   # Enable cross-origin request, from any domain (*)
   app.add_middleware(
       CORSMiddleware,
-      allow_origins=['*']
+      allow_origins=['*'],
+      allow_credentials=True,
+      allow_methods=["*"],
+      allow_headers=["*"],
   )
 
   # TODO: Load this from FastAPI config object
@@ -35,9 +42,13 @@ def create_app() -> FastAPI:
 
   # Define the chatbot endpoint
   @app.post("/chat")
-  async def chat(message: str, sender_id: str):
+  async def chat(req: Request):
     '''Get the Rasa model's response to the user's message'''
-    return await agent.handle_text(message, sender_id=sender_id)
+    message_data : dict = await req.json()
+    if 'message' not in message_data:
+      raise HTTPException(status_code=400, detail="Required field 'message' is missing")
+
+    return await agent.handle_text(message_data['message'], sender_id=message_data.get("sender_id"))
 
   @app.get("/chat/status")
   def status():
