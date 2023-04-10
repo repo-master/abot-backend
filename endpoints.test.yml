@@ -1,13 +1,11 @@
-### Abot backend endpoints config for DEVELOPMENT environment
-
 # This file contains the different endpoints your bot can use.
 
 # Server where the models are pulled from.
 # https://rasa.com/docs/rasa/model-storage#fetching-models-from-a-server
 
-# models:
-#  url: null
-#  wait_time_between_pulls:  10   # [optional](default: 100)
+models:
+ url: https://github.com/repo-master/abot-rasa/releases/latest/download/dev-model.tar.gz
+ wait_time_between_pulls:  10   # [optional](default: 100)
 
 # Server which runs your custom actions.
 # https://rasa.com/docs/rasa/custom-actions
