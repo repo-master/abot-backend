@@ -4,14 +4,14 @@
 # https://rasa.com/docs/rasa/model-storage#fetching-models-from-a-server
 
 models:
- url: https://github.com/repo-master/abot-rasa/releases/latest/download/dev-model.tar.gz
- wait_time_between_pulls:  10   # [optional](default: 100)
+  url: https://github.com/repo-master/abot-rasa/releases/latest/download/dev-model.tar.gz
+  wait_time_between_pulls:  10   # [optional](default: 100)
 
 # Server which runs your custom actions.
 # https://rasa.com/docs/rasa/custom-actions
 
 action_endpoint:
- url: "http://localhost:5055/webhook"
+  url: "http://localhost:5055/webhook"
 
 # Tracker store which is used to store the conversations.
 # By default the conversations are stored in memory.

@@ -7,4 +7,7 @@ RUN pip install --no-cache-dir --upgrade -r /app/requirements.txt
 
 COPY . /app
 
+# Endpoints config file to use
+ENV ENDPOINTS_FILE=endpoints.prod.yml
+
 CMD ["uvicorn", "abotcore:create_app", "--host", "0.0.0.0", "--port", "8000", "--factory"]

@@ -1,4 +1,5 @@
 fastapi~=0.94.1
 uvicorn~=0.21.0
 rasa~=3.4.5
+websockets~=10.4
 python-decouple~=3.8
