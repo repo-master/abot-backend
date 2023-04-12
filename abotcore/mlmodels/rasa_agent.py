@@ -7,17 +7,14 @@ from fastapi import FastAPI
 from rasa.core.channels import UserMessage
 from abotcore.channel.customchannel import CustomInputChannel
 
-from typing import Optional, Coroutine, List, Dict, Any, TYPE_CHECKING
+from typing import Optional, Coroutine, List, Dict, Any
 
 from .config import ENDPOINTS_PATH, CREDENTIALS_PATH, MODEL_STORE_PATH
-
-if TYPE_CHECKING:
-  from rasa.core.agent import Agent
 
 
 LOG = logging.getLogger(__name__)
 #TODO: Use ContextVar to set this correctly
-rasa_agent : Optional[Agent] = None
+rasa_agent = None
 
 async def rasa_agent_lifespan(app : FastAPI) -> Optional[Coroutine]:
   global rasa_agent
