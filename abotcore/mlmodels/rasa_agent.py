@@ -14,7 +14,9 @@ from .config import ENDPOINTS_PATH, CREDENTIALS_PATH, MODEL_STORE_PATH
 if TYPE_CHECKING:
   from rasa.core.agent import Agent
 
+
 LOG = logging.getLogger(__name__)
+#TODO: Use ContextVar to set this correctly
 rasa_agent : Optional[Agent] = None
 
 async def rasa_agent_lifespan(app : FastAPI) -> Optional[Coroutine]:
