@@ -9,7 +9,7 @@ pip install -r requirements.txt
 ```
 
 2. Set environments (.env method)
-```env
+```
 ENDPOINTS_FILE=endpoints.dev.yml
 MODEL_PATH=<Path to the trained model, only set when endpoints does not set the path.>
 CREDENTIALS_FILE=credentials.yml
@@ -39,4 +39,4 @@ python run.py
 docker run --name abot_backend_1 -d -p 8080:8080 abot/backend
 ```
 
-*Note*: Optionally, you can set the environment variables `PORT` and `LOG_LEVEL` before running the image.
+> *Note*: Optionally, you can set the environment variables `PORT` and `LOG_LEVEL` before running the image.
