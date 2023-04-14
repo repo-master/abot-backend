@@ -6,7 +6,7 @@ from decouple import config
 
 
 # DB to connect to (from environment variable). Default is in-memory DB (content will be lost!)
-DB_URI = config('DB_URL', default='sqlite+aiosqlite:///:memory:')
+DB_URI = config('DB_URI', default='sqlite+aiosqlite:///:memory:')
 
 Session = AsyncSession
 Transaction = AsyncTransaction
