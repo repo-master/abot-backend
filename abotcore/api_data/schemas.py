@@ -2,4 +2,3 @@
 
 from pydantic import BaseModel, Extra
 from typing import Optional, Dict, List, Any
-
