@@ -22,7 +22,7 @@ class SensorDataService:
     def __init__(self, session: Session = Depends(get_session)) -> None:
         self.async_session: Session = session
 
-    async def get_sensor_data(self) -> List[SensorData]:
+    async def get_sensor_data(self) -> List[SensorDataOut]:
         transaction: Transaction
         session : Session = self.async_session
         async with self.async_session.begin() as transaction:
