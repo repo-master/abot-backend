@@ -11,7 +11,8 @@ from abotcore.mlmodels.rasa_agent import rasa_agent_lifespan
 
 # Routers
 from abotcore import (
-  chat
+  chat,
+  api_data
 )
 
 from typing import List, Optional, Coroutine
@@ -25,7 +26,7 @@ CORS_ORIGINS = deconf('CORS_ORIGINS', default='*', cast=Csv())
 @asynccontextmanager
 async def app_lifespan(app : FastAPI):
   tasks = [
-    rasa_agent_lifespan(app)
+    #rasa_agent_lifespan(app)
   ]
   cleanup : List[Optional[Coroutine]] = await asyncio.gather(*tasks)
   yield
@@ -45,5 +46,6 @@ def create_app() -> FastAPI:
 
   # Add routes to the application
   app.include_router(chat.router)
+  app.include_router(api_data.router)
 
   return app
