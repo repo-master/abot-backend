@@ -35,10 +35,13 @@ class Sensor(ReadableMixin, Base):
         primary_key=True
     )
     sensor_name = Column(
-        'sensor_name',
+        'global_sensor_name',
         String
     )
-
+    sensor_type = Column(
+        'sensor_type',
+        String
+    )
 
 class SensorData(ReadableMixin, Base):
     __tablename__ = 'history_num'
@@ -79,7 +82,7 @@ class UnitSensorMap(ReadableMixin, Base):
     __tablename__ = 'unit_sensor_map'
     # Columns
     unit_sensor_map_id = Column(
-        'unit_sensor_map_id',
+        'unit_sensor_id',
         Integer,
         Identity(start=1),
         primary_key=True
