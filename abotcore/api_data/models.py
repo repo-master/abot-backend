@@ -8,12 +8,17 @@ from sqlalchemy import (
     Boolean,
     DateTime,
     Float,
-    Identity
+    Identity,
+    ForeignKey,
+    JSON
 )
 from sqlalchemy import (
     select
 )
 from sqlalchemy.engine.result import ScalarResult
+from sqlalchemy.orm import (
+    relationship, Mapped
+)
 
 from datetime import datetime
 
@@ -24,46 +29,73 @@ class ReadableMixin:
         return await session.scalars(select(cls))
 
 
-class Sensor(ReadableMixin, Base):
-    __tablename__ = 'sensor_master'
-
-    # Columns
-    sensor_id = Column(
-        'id',
+class SensorType(Base):
+    __tablename__ = 'sensor_type'
+    sensor_type: Mapped[int] = Column(
+        'sensor_type',
         Integer,
         Identity(start=1),
         primary_key=True
     )
-    sensor_name = Column(
-        'global_sensor_name',
+    type_name: Mapped[str] = Column(
+        'type_name',
         String
     )
-    sensor_type = Column(
-        'sensor_type',
+    default_unit: Mapped[str] = Column(
+        'default_unit',
         String
     )
 
-class SensorData(ReadableMixin, Base):
-    __tablename__ = 'history_num'
+
+class Sensor(ReadableMixin, Base):
+    __tablename__ = 'sensors'
 
     # Columns
-    timestamp = Column(
-        'timestamp',
-        DateTime,
+    sensor_id: Mapped[int] = Column(
+        'sensor_id',
+        Integer,
+        Identity(start=1),
         primary_key=True
     )
-    history_id = Column(
-        'history_id',
+    sensor_urn: Mapped[str] = Column(
+        'sensor_urn',
         String
     )
-    value = Column(
+    sensor_type_id: Mapped[int] = Column(
+        'sensor_type',
+        ForeignKey('sensor_type.sensor_type')
+    )
+
+    sensor_type: Mapped["SensorType"] = relationship("SensorType")
+
+
+class SensorData(ReadableMixin, Base):
+    __tablename__ = 'sensor_data'
+
+    # Columns
+    data_id: Mapped[int] = Column(
+        'data_id',
+        Integer,
+        Identity(start=1),
+        primary_key=True
+    )
+    timestamp: Mapped[datetime] = Column(
+        'timestamp',
+        DateTime
+    )
+    sensor_id: Mapped[int] = Column(
+        'sensor_id',
+        ForeignKey('sensors.sensor_id')
+    )
+    value: Mapped[dict] = Column(
         'value',
-        Float()
+        JSON(none_as_null=True)
     )
 
 
 class Unit(ReadableMixin, Base):
-    __tablename__ = 'unit_master'
+    __tablename__ = 'units'
+
     # Columns
     unit_id = Column(Integer, primary_key=True, autoincrement=True)
     global_unit_name = Column(String, nullable=False, unique=True)
@@ -81,17 +113,20 @@ class Unit(ReadableMixin, Base):
 class UnitSensorMap(ReadableMixin, Base):
     __tablename__ = 'unit_sensor_map'
     # Columns
-    unit_sensor_map_id = Column(
+    unit_sensor_map_id: Mapped[int] = Column(
         'unit_sensor_id',
         Integer,
         Identity(start=1),
         primary_key=True
     )
-    unit_id = Column(
+    unit_id: Mapped[int] = Column(
         'unit_id',
-        Integer
+        ForeignKey('units.unit_id')
     )
-    sensor_id = Column(
+    sensor_id: Mapped[int] = Column(
         'sensor_id',
-        Integer
+        ForeignKey('sensors.sensor_id')
     )
+
+    unit: Mapped["Unit"] = relationship("Unit")
+    sensor: Mapped["Sensor"] = relationship("Sensor")
