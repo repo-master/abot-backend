@@ -5,6 +5,7 @@ Make sure to set the environment variable `DB_URI` to the database connection
 
 import asyncio
 
+
 async def data_init():
     from abotcore.db import Base, async_engine
 

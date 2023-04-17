@@ -65,6 +65,14 @@ class Sensor(ReadableMixin, Base):
         'sensor_type',
         ForeignKey('sensor_type.sensor_type')
     )
+    sensor_name: Mapped[str] = Column(
+        'sensor_name',
+        String
+    )
+    sensor_alias: Mapped[str] = Column(
+        'sensor_alias',
+        String
+    )
 
     sensor_type: Mapped["SensorType"] = relationship("SensorType")
 
