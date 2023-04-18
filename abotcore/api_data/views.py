@@ -1,5 +1,5 @@
 
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Depends
 
 from .services import (
     SensorDataService
