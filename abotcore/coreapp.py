@@ -12,13 +12,9 @@ from abotcore import (
     api_data
 )
 
+from abotcore.config import CORS_ORIGINS
+
 from typing import List, Optional, Coroutine
-
-# Configuration
-from decouple import config as deconf, Csv
-
-
-CORS_ORIGINS = deconf('CORS_ORIGINS', default='*', cast=Csv())
 
 
 @asynccontextmanager

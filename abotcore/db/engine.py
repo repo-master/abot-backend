@@ -2,11 +2,8 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, AsyncTransaction
 from sqlalchemy.orm import sessionmaker
 
-from decouple import config
+from abotcore.config import DB_URI
 
-
-# DB to connect to (from environment variable). Default is in-memory DB (content will be lost!)
-DB_URI = config('DB_URI', default='sqlite+aiosqlite:///:memory:')
 
 Session = AsyncSession
 Transaction = AsyncTransaction
