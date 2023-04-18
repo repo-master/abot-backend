@@ -6,9 +6,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from contextlib import asynccontextmanager
 
-# App lifespan
-from abotcore.mlmodels.rasa_agent import rasa_agent_lifespan
-
 # Routers
 from abotcore import (
     chat,
@@ -27,7 +24,7 @@ CORS_ORIGINS = deconf('CORS_ORIGINS', default='*', cast=Csv())
 @asynccontextmanager
 async def app_lifespan(app: FastAPI):
     tasks = [
-        rasa_agent_lifespan(app)
+
     ]
     cleanup: List[Optional[Coroutine]] = await asyncio.gather(*tasks)
     yield

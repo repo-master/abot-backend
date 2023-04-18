@@ -1,7 +1,8 @@
 '''Data validation schemas (Pydantic) used by chat endpoints'''
 
 from pydantic import BaseModel, Extra
-from typing import Optional, Dict, List, Any
+from typing import Optional, Union, Dict, List, Any
+from enum import Enum
 
 
 class ChatMessage(BaseModel):
@@ -25,3 +26,11 @@ class ChatMessageOut(ChatMessage):
     buttons: Optional[List[Dict[str, Any]]] = None
     attachment: Optional[str] = None
     custom: Optional[Dict[str, Any]] = None
+
+
+class RasaRestStatus(Enum):
+    OK = 'ok'
+    UNREACHABLE = 'unreachable'
+
+class RasaStatusOut(BaseModel):
+    status: Union[RasaRestStatus, str]

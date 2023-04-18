@@ -8,9 +8,6 @@ ENV APP_MODULE=abotcore:create_app()
 ENV LOG_LEVEL=debug
 ENV WEB_CONCURRENCY=2
 
-# Endpoints config file to use
-ENV ENDPOINTS_FILE=endpoints.prod.yml
-
 # Copy requirements file and install
 COPY ./requirements.txt ./requirements.txt
 RUN pip install -r requirements.txt
