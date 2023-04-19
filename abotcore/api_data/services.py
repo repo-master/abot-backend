@@ -1,7 +1,8 @@
 
 from fastapi import Depends
 from sqlalchemy import (
-    select
+    select,
+    and_
 )
 from sqlalchemy.orm import joinedload
 
@@ -21,6 +22,7 @@ from .schemas import (
     SensorMetadataOut
 )
 
+from datetime import datetime, timedelta
 from typing import List, Tuple, Optional
 
 
@@ -29,17 +31,17 @@ class SensorDataService:
         self.async_session: Session = session
 
     async def get_sensor_metadata(self, sensor_id: int) -> Optional[SensorMetadataOut]:
-        session : Session = self.async_session
+        session: Session = self.async_session
         meta_query = await session.execute(
-            select(Sensor) \
-                .where(Sensor.sensor_id == sensor_id) \
-                .options(joinedload(Sensor.sensor_type, innerjoin=True))
+            select(Sensor)
+            .where(Sensor.sensor_id == sensor_id)
+            .options(joinedload(Sensor.sensor_type, innerjoin=True))
         )
 
-        meta_result : Sensor = meta_query.fetchone()
+        meta_result: Sensor = meta_query.fetchone()
 
         if meta_result:
-            first_sensor_match = meta_result[0] # FIXME: How do we get just one? Is this correct?
+            first_sensor_match = meta_result[0]  # FIXME: How do we get just one? Is this correct?
             return SensorMetadataOut(
                 sensor_urn=first_sensor_match.sensor_urn,
                 sensor_id=first_sensor_match.sensor_id,
@@ -49,15 +51,28 @@ class SensorDataService:
                 sensor_alias=first_sensor_match.sensor_alias
             )
 
-    async def get_sensor_data(self, sensor_id : int) -> Tuple[SensorMetadataOut, List[SensorDataOut]]:
+    async def get_sensor_data(self,
+                              sensor_id: int,
+                              timestamp_from: Optional[datetime] = None,
+                              timestamp_to: Optional[datetime] = None) -> Tuple[SensorMetadataOut, List[SensorDataOut]]:
         transaction: Transaction
-        session : Session = self.async_session
+        session: Session = self.async_session
+
+        # Default date range - today all day
+        if timestamp_from is None:
+            timestamp_from = datetime.now() - timedelta(hours=24)
+        if timestamp_to is None:
+            timestamp_to = datetime.now()
+
+        # TODO: Check if above values are correct
+
         async with self.async_session.begin() as transaction:
             sensor_metadata = await self.get_sensor_metadata(sensor_id)
 
             sensor_data_query = select(SensorData) \
-                .where(SensorData.sensor_id == sensor_id)
+                .where(SensorData.sensor_id == sensor_id) \
+                .where(and_(SensorData.timestamp >= timestamp_from, SensorData.timestamp <= timestamp_to))
             data_result = await session.scalars(sensor_data_query)
-            sensor_data : List[SensorDataOut] = list(map(SensorDataOut.from_orm, data_result.fetchall()))
+            sensor_data: List[SensorDataOut] = list(map(SensorDataOut.from_orm, data_result.fetchall()))
 
             return sensor_metadata, sensor_data
