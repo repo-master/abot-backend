@@ -22,7 +22,7 @@ from .schemas import (
     SensorMetadataOut
 )
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Tuple, Optional
 
 
@@ -64,7 +64,11 @@ class SensorDataService:
         if timestamp_to is None:
             timestamp_to = datetime.now()
 
-        # TODO: Check if above values are correct
+        # Database has timestamp stored as timezone-naive format [timestamp without timezone] in UTC, so:
+        # - Convert the given timestamp to UTC from whatever TZ it was
+        # - Strip the timezone information to match the DB schema
+        timestamp_from = timestamp_from.astimezone(timezone.utc).replace(tzinfo=None)
+        timestamp_to = timestamp_to.astimezone(timezone.utc).replace(tzinfo=None)
 
         async with self.async_session.begin() as transaction:
             sensor_metadata = await self.get_sensor_metadata(sensor_id)
