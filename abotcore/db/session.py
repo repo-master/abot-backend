@@ -3,7 +3,7 @@ from typing import AsyncIterator
 
 from sqlalchemy.exc import SQLAlchemyError
 
-from .engine import sessionmaker_async, Session
+from .engine import get_sessionmaker, Session
 
 import logging
 
@@ -15,7 +15,8 @@ async def get_session() -> AsyncIterator[Session]:
     '''Returns sessionmaker when it is available'''
     db: Session = None
     try:
-        db = sessionmaker_async()
+        sessionmaker = get_sessionmaker()
+        db = sessionmaker()
         yield db
     except SQLAlchemyError as e:
         LOG.exception(e)

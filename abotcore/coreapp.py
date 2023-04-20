@@ -15,7 +15,7 @@ from abotcore import (
     api_query
 )
 
-from abotcore.config import CORS_ORIGINS
+from abotcore.config import Settings
 
 from typing import List, Optional, Coroutine
 
@@ -34,18 +34,27 @@ def create_app() -> FastAPI:
     ### Application instance ###
     app = FastAPI(lifespan=app_lifespan)
     logger = logging.getLogger(__name__)
-
+    settings = Settings()
 
     ### Middleware ###
 
     # Enable cross-origin request, from any domain (*)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=CORS_ORIGINS,
+        allow_origins=settings.cors_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    ### App events ###
+    @app.on_event("startup")
+    async def init_tables():
+        from abotcore.db import Base, Connection, get_engine
+        engine = get_engine()
+        conn: Connection
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
 
 
     ### Exception handlers ###
