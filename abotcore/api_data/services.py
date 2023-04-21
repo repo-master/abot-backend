@@ -38,7 +38,7 @@ class SensorDataService:
             .options(joinedload(Sensor.sensor_type, innerjoin=True))
         )
 
-        meta_result: Sensor = meta_query.fetchone()
+        meta_result: Optional[Tuple[Sensor]] = meta_query.fetchone()
 
         if meta_result:
             first_sensor_match = meta_result[0]  # FIXME: How do we get just one? Is this correct?

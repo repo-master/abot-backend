@@ -1,12 +1,24 @@
 '''Root of all configuration (mostly from environment variables)'''
 
-from decouple import config as deconf, Csv
+from typing import List, Union
+from pydantic import (
+    BaseSettings,
+    AnyUrl,
+    PostgresDsn
+)
 
 
-CORS_ORIGINS = deconf('CORS_ORIGINS', default='*', cast=Csv())
+class Settings(BaseSettings):
+    cors_origins: List[str] = ['*']
 
-RASA_REST_ENDPOINT_BASE = deconf("RASA_REST_ENDPOINT_BASE", default="http://localhost:5005")
-ACTIONS_ENDPOINT_BASE = deconf("ACTIONS_ENDPOINT_BASE", default="http://localhost:5055")
+class EndpointSettings(BaseSettings):
+    rasa_rest_endpoint_base: AnyUrl = "http://localhost:5005"
+    actions_endpoint_base: AnyUrl = "http://localhost:5055"
 
-# DB to connect to (from environment variable). Default is in-memory DB (content will be lost!)
-DB_URI = deconf('DB_URI', default='sqlite+aiosqlite:///:memory:')
+class DBSettings(BaseSettings):
+    # DB to connect to (from environment variable). Default is in-memory DB (content will be lost!)
+    db_uri: Union[PostgresDsn, AnyUrl] = 'sqlite+aiosqlite:///:memory:'
+
+    class Config:
+        '''Yo dawg, I heard you like configs, so I put a config in your config'''
+        env_file = ".env"

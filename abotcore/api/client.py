@@ -1,11 +1,13 @@
 
 from httpx import AsyncClient
 
-from .config import RASA_REST_ENDPOINT_BASE, ACTIONS_ENDPOINT_BASE
+from .config import get_endpoint_settings
 
 
 def RasaRestClient(**kwargs) -> AsyncClient:
-    return AsyncClient(base_url=RASA_REST_ENDPOINT_BASE, **kwargs)
+    settings = get_endpoint_settings()
+    return AsyncClient(base_url=settings.rasa_rest_endpoint_base, **kwargs)
 
 def RasaActionsClient(**kwargs) -> AsyncClient:
-    return AsyncClient(base_url=ACTIONS_ENDPOINT_BASE, **kwargs)
+    settings = get_endpoint_settings()
+    return AsyncClient(base_url=settings.actions_endpoint_base, **kwargs)

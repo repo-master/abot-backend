@@ -7,9 +7,12 @@ import asyncio
 
 
 async def data_init():
-    from abotcore.db import Base, async_engine
+    from abotcore.db import Base, Connection, get_engine
 
-    async with async_engine.begin() as conn:
+    engine = get_engine()
+    conn: Connection
+
+    async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
 
