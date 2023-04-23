@@ -1,5 +1,5 @@
 
-from fastapi import Depends
+from fastapi import Depends, Response
 from sqlalchemy import (
     select,
     and_
@@ -80,3 +80,10 @@ class SensorDataService:
             sensor_data: List[SensorDataOut] = list(map(SensorDataOut.from_orm, data_result.fetchall()))
 
             return sensor_metadata, sensor_data
+
+
+class GraphPlotService:
+    async def plot_from_sensor_data(self, sensor_metadata: SensorMetadataOut, sensor_data: SensorDataOut) -> Response:
+        with open("data/sample-graph.png", "rb") as img_file:
+            image_blob = img_file.read()
+            return Response(image_blob, media_type="image/png")

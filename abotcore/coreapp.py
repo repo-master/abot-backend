@@ -72,4 +72,5 @@ def create_app() -> FastAPI:
     app.include_router(chat.router)
     app.include_router(api_data.router)
     app.include_router(api_query.router)
+
     return app

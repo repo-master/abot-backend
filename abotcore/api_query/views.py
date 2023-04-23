@@ -14,11 +14,12 @@ router = APIRouter(prefix='/query')
 
 
 @router.get("/sensor_id")
-async def fetch_sensor_id(sensor_type: str,
-                          location: str,
+async def fetch_sensor_id(sensor_type: Optional[str] = None,
+                          sensor_name: Optional[str] = None,
+                          location: Optional[str] = None,
                           sensor_data: SensorDataService = Depends(SensorDataService)):
-    sensor_id, metadata = await sensor_data.get_sensor_id(sensor_type, location)
+    metadata = await sensor_data.get_sensor_id(sensor_type, sensor_name, location)
+
     return {
-        'sensor_id': sensor_id,
-        'metadata': metadata
+        'sensor': metadata
     }
