@@ -63,8 +63,10 @@ class SensorDataService:
         sensor_type_result: Optional[Tuple[SensorType]] = sensor_type_query.fetchone()
         return sensor_type_result[0].sensor_type
 
-    async def get_unit_id(self, location: str) -> int:
-        session: Session = self.async_session
+    async def get_unit_id(self, location : str) -> int:
+        session : Session = self.async_session
+        #need to log it
+        print(f"Fetching unit info for {location}")
         location = int(location.split(" ")[-1])
         location_query = await session.execute(
             select(Unit)
