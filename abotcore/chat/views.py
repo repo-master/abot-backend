@@ -28,6 +28,8 @@ async def chat(msg: ChatMessageIn, chat_service: ChatMessageService = Depends(Ch
     return await chat_service.send_chat_message(msg)
 
 # Used as a heartbeat and general status enquiry (/chat/status)
+
+
 @router.get("/status")
 async def status(chat_service: ChatMessageService = Depends(ChatMessageService)) -> RasaStatusOut:
     '''Heartbeat and status enquiry'''

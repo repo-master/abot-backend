@@ -32,48 +32,49 @@ class SensorDataService:
     def __init__(self, session: Session = Depends(get_session)) -> None:
         self.async_session: Session = session
 
-    async def get_sensor_id(self, sensor_type : str, location : str) -> int:
+    async def get_sensor_id(self, sensor_type: str, location: str) -> int:
         session: Session = self.async_session
         try:
-            sensor_type_id = await self.get_sensor_type(sensor_type= sensor_type)
+            sensor_type_id = await self.get_sensor_type(sensor_type=sensor_type)
         except TypeError:
             return None, "Sensor type does not exist need to raise error"
-        try: 
+        try:
             unit_id = await self.get_unit_id(location)
         except TypeError:
             return None, "Unit Does not exist need to raise error"
         sensor_id_query = await session.execute(
-            select(UnitSensorMap).join(Unit).join(Sensor).where(Unit.unit_id == unit_id, Sensor.sensor_type_id == sensor_type_id)
-            .options( joinedload(UnitSensorMap.sensor), joinedload(UnitSensorMap.unit),)
+            select(UnitSensorMap).join(Unit).join(Sensor).where(
+                Unit.unit_id == unit_id, Sensor.sensor_type_id == sensor_type_id)
+            .options(joinedload(UnitSensorMap.sensor), joinedload(UnitSensorMap.unit),)
         )
         try:
             sensor_id = sensor_id_query.fetchone()[0].sensor_id
         except TypeError:
             return None, "Sensor id does not exist"
         metadata = await self.get_metadata_for_sensor(sensor_id)
-        return sensor_id , metadata
+        return sensor_id, metadata
 
-    
-    async def get_sensor_type(self, sensor_type : str) -> int:
-        session : Session = self.async_session
+    async def get_sensor_type(self, sensor_type: str) -> int:
+        session: Session = self.async_session
         sensor_type_query = await session.execute(
             select(SensorType)
             .where(SensorType.type_name == sensor_type)
         )
-        sensor_type_result : Optional[Tuple[SensorType]] = sensor_type_query.fetchone()
+        sensor_type_result: Optional[Tuple[SensorType]] = sensor_type_query.fetchone()
         return sensor_type_result[0].sensor_type
 
-    async def get_unit_id(self, location : str) -> int:
-        session : Session = self.async_session
+    async def get_unit_id(self, location: str) -> int:
+        session: Session = self.async_session
         location = int(location.split(" ")[-1])
         location_query = await session.execute(
             select(Unit)
             .where(Unit.unit_id == location)
         )
-        location_result :Optional[Tuple[Unit]] = location_query.fetchone()
+        location_result: Optional[Tuple[Unit]] = location_query.fetchone()
         return location_result[0].unit_id
-    
-    async def get_metadata_for_sensor(self, sensor_id : int):
+
+    # TODO: Remove this method, redundant
+    async def get_metadata_for_sensor(self, sensor_id: int):
         session: Session = self.async_session
 
         meta_query = await session.execute(

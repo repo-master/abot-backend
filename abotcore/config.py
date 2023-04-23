@@ -11,9 +11,11 @@ from pydantic import (
 class Settings(BaseSettings):
     cors_origins: List[str] = ['*']
 
+
 class EndpointSettings(BaseSettings):
     rasa_rest_endpoint_base: AnyUrl = "http://localhost:5005"
     actions_endpoint_base: AnyUrl = "http://localhost:5055"
+
 
 class DBSettings(BaseSettings):
     # DB to connect to (from environment variable). Default is in-memory DB (content will be lost!)

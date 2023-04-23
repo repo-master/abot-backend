@@ -12,6 +12,7 @@ class SensorValue(TypedDict):
     state: NotRequired[Any]
     period: NotRequired[timedelta]
 
+
 class SensorDataOut(BaseModel):
     timestamp: datetime
     sensor_id: str
@@ -19,6 +20,7 @@ class SensorDataOut(BaseModel):
 
     class Config:
         orm_mode = True
+
 
 class SensorMetadataOut(BaseModel):
     sensor_urn: str

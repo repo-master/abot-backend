@@ -56,7 +56,6 @@ def create_app() -> FastAPI:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
 
-
     ### Exception handlers ###
 
     @app.exception_handler(OSError)
@@ -66,7 +65,6 @@ def create_app() -> FastAPI:
             status_code=500,
             content={"exception": 'OSError', "detail": str(exc)}
         )
-
 
     ### Routes ###
 

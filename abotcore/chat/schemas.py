@@ -32,5 +32,6 @@ class RasaRestStatus(Enum):
     OK = 'ok'
     UNREACHABLE = 'unreachable'
 
+
 class RasaStatusOut(BaseModel):
     status: Union[RasaRestStatus, str]

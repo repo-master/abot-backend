@@ -18,6 +18,7 @@ Session = AsyncSession
 Transaction = AsyncTransaction
 Connection = AsyncConnection
 
+
 @lru_cache()
 def get_engine() -> AsyncEngine:
     '''Create and return a db engine using the config'''
@@ -26,6 +27,7 @@ def get_engine() -> AsyncEngine:
         db_settings.db_uri,
         pool_pre_ping=True
     )
+
 
 @lru_cache()
 def get_sessionmaker():
