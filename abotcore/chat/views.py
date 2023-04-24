@@ -18,7 +18,7 @@ router = APIRouter(prefix='/chat')
 
 
 # Default route (/chat)
-@router.post("")
+@router.post("", response_model_exclude_unset=True)
 async def chat(msg: ChatMessageIn, chat_service: ChatMessageService = Depends(ChatMessageService)) -> List[ChatMessageOut]:
     '''Get the Rasa model's response to the user's message'''
 

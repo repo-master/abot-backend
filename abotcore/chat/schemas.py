@@ -22,6 +22,7 @@ class ChatMessageIn(ChatMessage):
 
 class ChatMessageOut(ChatMessage):
     recipient_id: str
+    text: Optional[str] = None
     image: Optional[str] = None
     buttons: Optional[List[Dict[str, Any]]] = None
     attachment: Optional[str] = None
