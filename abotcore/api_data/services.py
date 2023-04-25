@@ -1,4 +1,6 @@
 
+import base64
+
 from fastapi import Depends, Response
 from sqlalchemy import (
     select,
@@ -83,7 +85,9 @@ class SensorDataService:
 
 
 class GraphPlotService:
-    async def plot_from_sensor_data(self, sensor_metadata: SensorMetadataOut, sensor_data: SensorDataOut) -> Response:
+    async def plot_from_sensor_data(self, sensor_metadata: SensorMetadataOut, sensor_data: SensorDataOut) -> str:
         with open("data/sample-graph.png", "rb") as img_file:
-            image_blob = img_file.read()
-            return Response(image_blob, media_type="image/png")
+            img_data64 = base64.b64encode(img_file.read()).decode('utf-8')
+            img_mimetype = 'image/png'
+            uri = "data:%s;base64,%s" % (img_mimetype, img_data64)
+            return uri

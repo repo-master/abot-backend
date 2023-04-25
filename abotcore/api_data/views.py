@@ -1,4 +1,6 @@
 
+import urllib.parse
+
 from fastapi import APIRouter, Depends
 
 from .services import (
@@ -35,4 +37,21 @@ async def data_report(sensor_id: int,
                       graph_plot: GraphPlotService = Depends(GraphPlotService)):
     metadata, data = await sensor_data.get_sensor_data(sensor_id, timestamp_from, timestamp_to)
     graph_image = await graph_plot.plot_from_sensor_data(metadata, data)
-    return graph_image
+
+    report_page_params = {
+        'sensor_id': sensor_id
+    }
+
+    if timestamp_from is not None:
+        report_page_params.update({'time_from': timestamp_from.isoformat()})
+    if timestamp_to is not None:
+        report_page_params.update({'time_to': timestamp_to.isoformat()})
+
+    interactive_report_url = 'https://example.com/report/?%s' % urllib.parse.urlencode(report_page_params)
+
+    response = {
+        'interactive_report_route': interactive_report_url,
+        'preview_image': graph_image
+    }
+
+    return response
