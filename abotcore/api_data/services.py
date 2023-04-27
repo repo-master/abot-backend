@@ -20,6 +20,7 @@ from .models import (
     Unit
 )
 from .schemas import (
+    SensorDataIn,
     SensorDataOut,
     SensorMetadataOut
 )
@@ -32,6 +33,8 @@ import matplotlib.dates as mdates
 import io
 import base64
 
+from contextlib import asynccontextmanager
+
 
 class SensorDataService:
     def __init__(self, session: Session = Depends(get_session)) -> None:
@@ -39,30 +42,32 @@ class SensorDataService:
 
     async def get_sensor_metadata(self, sensor_id: int) -> Optional[SensorMetadataOut]:
         session: Session = self.async_session
-        meta_query = await session.execute(
-            select(Sensor)
-            .where(Sensor.sensor_id == sensor_id)
-            .options(joinedload(Sensor.sensor_type, innerjoin=True))
-        )
 
-        meta_result: Optional[Tuple[Sensor]] = meta_query.fetchone()
-
-        if meta_result:
-            first_sensor_match = meta_result[0]  # FIXME: How do we get just one? Is this correct?
-            return SensorMetadataOut(
-                sensor_urn=first_sensor_match.sensor_urn,
-                sensor_id=first_sensor_match.sensor_id,
-                sensor_type=first_sensor_match.sensor_type.type_name,
-                display_unit=first_sensor_match.sensor_type.default_unit,
-                sensor_name=first_sensor_match.sensor_name,
-                sensor_alias=first_sensor_match.sensor_alias
+        async with session.begin():
+            meta_result = await session.execute(
+                select(Sensor)
+                .where(Sensor.sensor_id == sensor_id)
+                .options(joinedload(Sensor.sensor_type, innerjoin=True))
             )
+
+            meta_row: Optional[Tuple[Sensor]] = meta_result.fetchone()
+
+            if meta_row:
+                first_sensor_match = meta_row[0]  # FIXME: How do we get just one? Is this correct?
+                return SensorMetadataOut(
+                    sensor_urn=first_sensor_match.sensor_urn,
+                    sensor_id=first_sensor_match.sensor_id,
+                    sensor_type=first_sensor_match.sensor_type.type_name,
+                    display_unit=first_sensor_match.sensor_type.default_unit,
+                    sensor_name=first_sensor_match.sensor_name,
+                    sensor_alias=first_sensor_match.sensor_alias
+                )
+
 
     async def get_sensor_data(self,
                               sensor_id: int,
                               timestamp_from: Optional[datetime] = None,
-                              timestamp_to: Optional[datetime] = None) -> Tuple[SensorMetadataOut, List[SensorDataOut]]:
-        transaction: Transaction
+                              timestamp_to: Optional[datetime] = None) -> List[SensorDataOut]:
         session: Session = self.async_session
 
         # Default date range - today all day
@@ -77,28 +82,57 @@ class SensorDataService:
         timestamp_from = timestamp_from.astimezone(timezone.utc).replace(tzinfo=None)
         timestamp_to = timestamp_to.astimezone(timezone.utc).replace(tzinfo=None)
 
-        async with self.async_session.begin() as transaction:
-            sensor_metadata = await self.get_sensor_metadata(sensor_id)
-
+        async with session.begin():
             sensor_data_query = select(SensorData) \
                 .where(SensorData.sensor_id == sensor_id) \
                 .where(and_(SensorData.timestamp >= timestamp_from, SensorData.timestamp <= timestamp_to))
+
             data_result = await session.scalars(sensor_data_query)
             sensor_data: List[SensorDataOut] = list(map(SensorDataOut.from_orm, data_result.fetchall()))
 
-            return sensor_metadata, sensor_data
+            return sensor_data
+
+    async def insert_sensor_data(self, data: SensorDataIn):
+        transaction: Transaction
+        async with self.async_session.begin() as transaction:
+            self.async_session.add(SensorData(**data.dict()))
+            await self.async_session.commit()
 
 
 class GraphPlotService:
-    async def plot_from_sensor_data(self, sensor_metadata: SensorMetadataOut, sensor_data: SensorDataOut) -> str:
-        df = pd.DataFrame([s.__dict__ for s in sensor_data])
-        df['value'] = [x['value'] for x in df['value']]
-        df['timestamp'] = pd.to_datetime(df['timestamp'])
-        graph_image = self.plot_graph(df, x_axis='timestamp', y_axis='value', x_label="Timestamp", y_label="Value",title=sensor_metadata.sensor_name)
-        return graph_image
+    @asynccontextmanager
+    async def plot_from_sensor_data(self, sensor_metadata: SensorMetadataOut, sensor_data: SensorDataOut) -> Optional[io.BytesIO]:
+        img_file = io.BytesIO()
+        df = pd.DataFrame(sensor_data, index=None)
 
+        try:
+            if len(df) > 0:
+                df['timestamp'] = pd.to_datetime(df['timestamp'])
+                df.sort_values('timestamp', ascending=True, inplace=True)
+                # We get a dictionary result in the 'value' column. We need to 'explode' it to separate columns.
+                data_value_series = df['value'].apply(pd.Series)
+                # Concatenate the data value columns to original df, remove the 'value' column from original
+                df = pd.concat([df.drop(['value'], axis=1), data_value_series], axis=1)
 
-    def plot_graph(self, df, x_axis, y_axis, x_label=None, y_label=None, title=None):
+                # Generate image plot
+                img_file.name = "report_plot.png"
+                self.plot_graph(img_file, df, x_axis='timestamp', y_axis='value', x_label="Timestamp", y_label="Value",title=sensor_metadata.sensor_name)
+                img_file.seek(0)
+            else:
+                # No data, so there is nothing to plot. Return None
+                yield
+            yield img_file
+        finally:
+            img_file.close()
+
+    def plot_graph(self,
+                   save_file: io.BytesIO,
+                   df: pd.DataFrame,
+                   x_axis,
+                   y_axis,
+                   x_label=None,
+                   y_label=None,
+                   title=None):
         # plot the data
         fig, ax = plt.subplots(figsize=(10, 5))
         ax.plot(df[x_axis], df[y_axis])
@@ -121,21 +155,18 @@ class GraphPlotService:
             
         # adjust plot margins
         fig.subplots_adjust(top=0.88, left=0.11, bottom=0.3, right=0.9)
-        
-        # save plot as png image to memory buffer
-        img_buffer = io.BytesIO()
-        fig.savefig(img_buffer, format='png') 
-        # fig.savefig("my_plot.png")#Temp for reffrence
-        img_buffer.seek(0)
-        
-        # encode plot image buffer to base64 string
-        img_base64 = base64.b64encode(img_buffer.getvalue()).decode('utf-8')
-        
-        # clear the buffer
-        img_buffer.truncate(0)
 
-        img_mimetype = 'image/png'            
+        # save plot as png image to memory buffer
+        fig.savefig(save_file) 
+        # fig.savefig("my_plot.png") # Temp for reference
+
+    def image_to_data_uri(self, img_file: io.BytesIO):
+        # encode plot image buffer to base64 string
+        img_mimetype = 'image/png'
+        img_base64 = base64.b64encode(img_file.getvalue()).decode()
+
         return "data:%s;base64,%s" % (img_mimetype, img_base64)
+
         # with open("data/sample-graph.png", "rb") as img_file:
         #     img_data64 = base64.b64encode(img_file.read()).decode('utf-8')
         #     img_mimetype = 'image/png'
