@@ -100,9 +100,9 @@ class SensorDataService:
 
 class GraphPlotService:
     @asynccontextmanager
-    async def plot_from_sensor_data(self, sensor_metadata: SensorMetadataOut, sensor_data: SensorDataOut) -> Optional[io.BytesIO]:
+    async def plot_from_sensor_data(self, sensor_metadata: SensorMetadataOut, sensor_data: List[SensorDataOut]) -> Optional[io.BytesIO]:
         img_file = io.BytesIO()
-        df = pd.DataFrame(sensor_data, index=None)
+        df = pd.DataFrame([x.__dict__ for x in sensor_data], index=None)
 
         try:
             if len(df) > 0:
