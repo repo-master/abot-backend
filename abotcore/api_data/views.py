@@ -68,6 +68,7 @@ async def data_report(sensor_id: int,
 
     return response
 
+
 @router.post('/sensor/insert')
 async def insert_sensor_data(data: SensorDataIn,
                              sensor_data: SensorDataService = Depends(SensorDataService)):

@@ -18,6 +18,7 @@ class SensorDataIn(BaseModel):
     sensor_id: int
     value: SensorValue
 
+
 class SensorDataOut(SensorDataIn):
     class Config:
         orm_mode = True

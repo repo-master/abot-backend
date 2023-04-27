@@ -63,7 +63,6 @@ class SensorDataService:
                     sensor_alias=first_sensor_match.sensor_alias
                 )
 
-
     async def get_sensor_data(self,
                               sensor_id: int,
                               timestamp_from: Optional[datetime] = None,
@@ -116,7 +115,8 @@ class GraphPlotService:
 
                 # Generate image plot
                 img_file.name = "report_plot.png"
-                self.plot_graph(img_file, df, x_axis='timestamp', y_axis='value', x_label="Timestamp", y_label="Value",title=sensor_metadata.sensor_name)
+                self.plot_graph(img_file, df, x_axis='timestamp', y_axis='value', x_label="Timestamp",
+                                y_label="Value", title=sensor_metadata.sensor_name)
                 img_file.seek(0)
             else:
                 # No data, so there is nothing to plot. Return None
@@ -136,28 +136,28 @@ class GraphPlotService:
         # plot the data
         fig, ax = plt.subplots(figsize=(10, 5))
         ax.plot(df[x_axis], df[y_axis])
-        
+
         # set the x-axis label and y-axis label
         if x_label is not None:
             ax.set_xlabel(x_label)
 
         if y_label is not None:
             ax.set_ylabel(y_label)
-        
+
         # add title to the plot if provided
         if title is not None:
             ax.set_title(title)
-        
+
         # format the tick labels on the x-axis
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d %H:%M:%S'))
         for tick in ax.get_xticklabels():
             tick.set_rotation(30)
-            
+
         # adjust plot margins
         fig.subplots_adjust(top=0.88, left=0.11, bottom=0.3, right=0.9)
 
         # save plot as png image to memory buffer
-        fig.savefig(save_file) 
+        fig.savefig(save_file)
         # fig.savefig("my_plot.png") # Temp for reference
 
     def image_to_data_uri(self, img_file: io.BytesIO):
