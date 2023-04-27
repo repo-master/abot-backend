@@ -126,7 +126,7 @@ class GraphPlotService:
         # save plot as png image to memory buffer
         img_buffer = io.BytesIO()
         fig.savefig(img_buffer, format='png') 
-        fig.savefig("my_plot.png")#Temp for reffrence
+        # fig.savefig("my_plot.png")#Temp for reffrence
         img_buffer.seek(0)
         
         # encode plot image buffer to base64 string
