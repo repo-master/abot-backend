@@ -26,7 +26,6 @@ from .schemas import (
 
 from datetime import datetime, timedelta, timezone
 from typing import List, Tuple, Optional
-import json
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
@@ -135,7 +134,7 @@ class GraphPlotService:
         # clear the buffer
         img_buffer.truncate(0)
             
-        return img_base64
+        return "data:%s;base64,%s" % ('image/png', img_base64)
         # with open("data/sample-graph.png", "rb") as img_file:
         #     img_data64 = base64.b64encode(img_file.read()).decode('utf-8')
         #     img_mimetype = 'image/png'
