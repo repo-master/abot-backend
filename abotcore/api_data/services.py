@@ -116,7 +116,7 @@ class GraphPlotService:
                 # Generate image plot
                 img_file.name = "report_plot.png"
                 self.plot_graph(img_file, df, x_axis='timestamp', y_axis='value', x_label="Timestamp",
-                                y_label="Value", title=sensor_metadata.sensor_name)
+                                y_label=f"{sensor_metadata.sensor_type} in {sensor_metadata.display_unit}", title=sensor_metadata.sensor_name)
                 img_file.seek(0)
             else:
                 # No data, so there is nothing to plot. Return None
@@ -135,14 +135,16 @@ class GraphPlotService:
                    title=None):
         # plot the data
         fig, ax = plt.subplots(figsize=(10, 5))
-        ax.plot(df[x_axis], df[y_axis])
+        if y_label is not None:
+            ax.set_ylabel(y_label)
+            ax.plot(df[x_axis], df[y_axis], label = y_label)
+        else:
+            ax.plot(df[x_axis], df[y_axis])
 
         # set the x-axis label and y-axis label
         if x_label is not None:
             ax.set_xlabel(x_label)
 
-        if y_label is not None:
-            ax.set_ylabel(y_label)
 
         # add title to the plot if provided
         if title is not None:
@@ -152,6 +154,7 @@ class GraphPlotService:
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d %H:%M:%S'))
         for tick in ax.get_xticklabels():
             tick.set_rotation(30)
+        ax.legend(loc='upper right', bbox_to_anchor=(1, 1.15))
 
         # adjust plot margins
         fig.subplots_adjust(top=0.88, left=0.11, bottom=0.3, right=0.9)
