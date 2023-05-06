@@ -24,6 +24,11 @@ class SensorDataOut(SensorDataIn):
         orm_mode = True
 
 
+class UnitMetadataOut(BaseModel):
+    unit_urn: str
+    unit_id: int
+    unit_alias: Optional[str]
+
 class SensorMetadataOut(BaseModel):
     sensor_urn: str
     sensor_id: int
@@ -34,3 +39,6 @@ class SensorMetadataOut(BaseModel):
 
     class Config:
         orm_mode = True
+
+class SensorMetadataLocationOut(SensorMetadataOut):
+    sensor_location: Optional[UnitMetadataOut]

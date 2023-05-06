@@ -17,12 +17,15 @@ from abotcore.db import (
 from .models import (
     Sensor,
     SensorData,
-    Unit
+    Unit,
+    UnitSensorMap
 )
 from .schemas import (
     SensorDataIn,
     SensorDataOut,
-    SensorMetadataOut
+    SensorMetadataOut,
+    SensorMetadataLocationOut,
+    UnitMetadataOut
 )
 
 from datetime import datetime, timedelta, timezone
@@ -63,23 +66,30 @@ class SensorDataService:
                     sensor_alias=first_sensor_match.sensor_alias
                 )
 
-    async def get_sensor_list(self) -> List[SensorMetadataOut]:
+    async def get_sensor_list(self) -> List[SensorMetadataLocationOut]:
         session: Session = self.async_session
 
         async with session.begin():
             meta_result = await session.execute(
-                select(Sensor)
-                .options(joinedload(Sensor.sensor_type, innerjoin=True))
+                select(Sensor, Unit)
+                    .join(UnitSensorMap, UnitSensorMap.sensor_id == Sensor.sensor_id)
+                    .join(Unit, Unit.unit_id == UnitSensorMap.unit_id)
+                    .options(joinedload(Sensor.sensor_type, innerjoin=True))
             )
-            meta_rows: List[Tuple[Sensor]] = meta_result.fetchall()
+            meta_rows: List[Tuple[Sensor, Unit]] = meta_result.fetchall()
             return [
-                SensorMetadataOut(
+                SensorMetadataLocationOut(
                     sensor_urn=sensor_res[0].sensor_urn,
                     sensor_id=sensor_res[0].sensor_id,
                     sensor_type=sensor_res[0].sensor_type.type_name,
                     display_unit=sensor_res[0].sensor_type.default_unit,
                     sensor_name=sensor_res[0].sensor_name,
-                    sensor_alias=sensor_res[0].sensor_alias
+                    sensor_alias=sensor_res[0].sensor_alias,
+                    sensor_location=UnitMetadataOut(
+                        unit_id=sensor_res[1].unit_id,
+                        unit_urn=sensor_res[1].global_unit_name,
+                        unit_alias=sensor_res[1].unit_alias
+                    )
                 )
                 for sensor_res in meta_rows
             ]
