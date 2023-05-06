@@ -33,6 +33,11 @@ async def sensor_data(sensor_id: int,
     }
 
 
+@router.get("/sensor/list")
+async def sensor_list(sensor_data: SensorDataService = Depends(SensorDataService)):
+    all_sensors = await sensor_data.get_sensor_list()
+    return all_sensors
+
 @router.get('/report')
 async def data_report(sensor_id: int,
                       timestamp_from: Optional[datetime] = None,

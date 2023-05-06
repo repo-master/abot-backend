@@ -63,6 +63,27 @@ class SensorDataService:
                     sensor_alias=first_sensor_match.sensor_alias
                 )
 
+    async def get_sensor_list(self) -> List[SensorMetadataOut]:
+        session: Session = self.async_session
+
+        async with session.begin():
+            meta_result = await session.execute(
+                select(Sensor)
+                .options(joinedload(Sensor.sensor_type, innerjoin=True))
+            )
+            meta_rows: List[Tuple[Sensor]] = meta_result.fetchall()
+            return [
+                SensorMetadataOut(
+                    sensor_urn=sensor_res[0].sensor_urn,
+                    sensor_id=sensor_res[0].sensor_id,
+                    sensor_type=sensor_res[0].sensor_type.type_name,
+                    display_unit=sensor_res[0].sensor_type.default_unit,
+                    sensor_name=sensor_res[0].sensor_name,
+                    sensor_alias=sensor_res[0].sensor_alias
+                )
+                for sensor_res in meta_rows
+            ]
+
     async def get_sensor_data(self,
                               sensor_id: int,
                               timestamp_from: Optional[datetime] = None,
