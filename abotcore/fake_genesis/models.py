@@ -1,32 +1,12 @@
-'''DB models used by chat endpoints'''
-
-from abotcore.db import Base, Session
-from sqlalchemy import (
-    Column,
-    String,
-    Integer,
-    Boolean,
-    DateTime,
-    Float,
-    Identity,
-    ForeignKey,
-    JSON
-)
-from sqlalchemy import (
-    select
-)
-from sqlalchemy.engine.result import ScalarResult
-from sqlalchemy.orm import (
-    relationship, Mapped
-)
+'''DB models for use as Genesis'''
 
 from datetime import datetime
 
+from sqlalchemy import (JSON, Boolean, Column, DateTime, Float, ForeignKey,
+                        Identity, Integer, String)
+from sqlalchemy.orm import Mapped, relationship
 
-class ReadableMixin:
-    @classmethod
-    async def read_all(cls, session: Session) -> ScalarResult:
-        return await session.scalars(select(cls))
+from abotcore.db import Base, ReadableMixin
 
 
 class SensorType(Base):

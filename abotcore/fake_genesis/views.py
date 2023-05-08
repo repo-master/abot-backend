@@ -1,19 +1,12 @@
 
 import urllib.parse
-
-from fastapi import APIRouter, HTTPException, Depends
-
-from .services import (
-    SensorDataService,
-    GraphPlotService
-)
-from .schemas import (
-    SensorDataIn
-)
-
 from datetime import datetime
 from typing import Optional
 
+from fastapi import APIRouter, Depends, HTTPException
+
+from .schemas import SensorDataIn
+from .services import GraphPlotService, SensorDataService
 
 # Endpoint router
 router = APIRouter(prefix='/data')

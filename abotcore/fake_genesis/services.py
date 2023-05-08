@@ -1,42 +1,23 @@
+'''Implements services for the fake Genesis service'''
 
 import base64
+import io
+from contextlib import asynccontextmanager
+from datetime import datetime, timedelta, timezone
+from typing import List, Optional, Tuple
 
+import matplotlib.dates as mdates
+import matplotlib.pyplot as plt
+import pandas as pd
 from fastapi import Depends, Response
-from sqlalchemy import (
-    select,
-    and_
-)
+from sqlalchemy import and_, select
 from sqlalchemy.orm import joinedload
 
-from abotcore.db import (
-    get_session,
-    Session,
-    Transaction
-)
+from abotcore.db import Session, Transaction, get_session
 
-from .models import (
-    Sensor,
-    SensorData,
-    Unit,
-    UnitSensorMap
-)
-from .schemas import (
-    SensorDataIn,
-    SensorDataOut,
-    SensorMetadataOut,
-    SensorMetadataLocationOut,
-    UnitMetadataOut
-)
-
-from datetime import datetime, timedelta, timezone
-from typing import List, Tuple, Optional
-import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import io
-import base64
-
-from contextlib import asynccontextmanager
+from .models import Sensor, SensorData, Unit, UnitSensorMap
+from .schemas import (SensorDataIn, SensorDataOut, SensorMetadataLocationOut,
+                      SensorMetadataOut, UnitMetadataOut)
 
 
 class SensorDataService:
@@ -72,9 +53,9 @@ class SensorDataService:
         async with session.begin():
             meta_result = await session.execute(
                 select(Sensor, Unit)
-                    .join(UnitSensorMap, UnitSensorMap.sensor_id == Sensor.sensor_id)
-                    .join(Unit, Unit.unit_id == UnitSensorMap.unit_id)
-                    .options(joinedload(Sensor.sensor_type, innerjoin=True))
+                .join(UnitSensorMap, UnitSensorMap.sensor_id == Sensor.sensor_id)
+                .join(Unit, Unit.unit_id == UnitSensorMap.unit_id)
+                .options(joinedload(Sensor.sensor_type, innerjoin=True))
             )
             meta_rows: List[Tuple[Sensor, Unit]] = meta_result.fetchall()
             return [
@@ -168,14 +149,13 @@ class GraphPlotService:
         fig, ax = plt.subplots(figsize=(10, 5))
         if y_label is not None:
             ax.set_ylabel(y_label)
-            ax.plot(df[x_axis], df[y_axis], label = y_label)
+            ax.plot(df[x_axis], df[y_axis], label=y_label)
         else:
             ax.plot(df[x_axis], df[y_axis])
 
         # set the x-axis label and y-axis label
         if x_label is not None:
             ax.set_xlabel(x_label)
-
 
         # add title to the plot if provided
         if title is not None:

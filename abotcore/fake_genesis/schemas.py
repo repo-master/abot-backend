@@ -1,10 +1,10 @@
-'''Data validation schemas (Pydantic) used by chat endpoints'''
+'''Data validation schemas (Pydantic) used by genesis endpoints'''
+
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
-
-from typing import Optional, Dict, List, Any
-from typing_extensions import TypedDict, NotRequired
-from datetime import datetime, timedelta
+from typing_extensions import NotRequired, TypedDict
 
 
 class SensorValue(TypedDict):
