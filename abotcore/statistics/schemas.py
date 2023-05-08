@@ -8,9 +8,14 @@ from typing_extensions import NotRequired, TypedDict
 
 
 class DataIn(BaseModel):
+    # Pandas DataFrame parameters
     data: List[Dict[str, Any]]
-    index: Optional[str]
+    index: Optional[List[Any]]
     columns: Optional[List[str]]
+
+    # Other optional settings
+    index_column_names: Optional[Union[str, List[str]]]
+    datetime_column_names: Optional[Union[str, List[str]]]
 
 
 class AggregationMethod(str, Enum):
@@ -23,3 +28,6 @@ class AggregationMethod(str, Enum):
 class AggregationIn(DataIn, BaseModel):
     method: Union[AggregationMethod, List[AggregationMethod]] = AggregationMethod.RECENT
     aggregation_column: Optional[str]
+
+class OutliersIn(DataIn, BaseModel):
+    outliers_column: Optional[str]
