@@ -11,7 +11,8 @@ from contextlib import asynccontextmanager
 # Routers
 from abotcore import (
     chat,
-    fake_genesis
+    fake_genesis,
+    statistics
 )
 
 from abotcore.config import Settings
@@ -74,5 +75,6 @@ def create_app() -> FastAPI:
     app.include_router(fake_genesis.router)
 
     ##### PRIVATE #####
+    app.include_router(statistics.router)
 
     return app
