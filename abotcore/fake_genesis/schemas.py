@@ -8,12 +8,14 @@ from typing_extensions import NotRequired, TypedDict
 
 
 class SensorValue(TypedDict):
+    '''Raw sensor reading, aka value (can have any kind of value)'''
     value: NotRequired[Any]
     state: NotRequired[Any]
     period: NotRequired[timedelta]
 
 
 class SensorDataIn(BaseModel):
+    '''Single recorded instance of sensor's value'''
     timestamp: datetime
     sensor_id: int
     value: SensorValue
@@ -25,11 +27,14 @@ class SensorDataOut(SensorDataIn):
 
 
 class UnitMetadataOut(BaseModel):
+    '''Information regarding this Unit (room)'''
     unit_urn: str
     unit_id: int
     unit_alias: Optional[str]
 
+
 class SensorMetadataOut(BaseModel):
+    '''Information regarding this sensor'''
     sensor_urn: str
     sensor_id: int
     sensor_name: Optional[str]
@@ -40,5 +45,7 @@ class SensorMetadataOut(BaseModel):
     class Config:
         orm_mode = True
 
+
 class SensorMetadataLocationOut(SensorMetadataOut):
+    '''Sensor's metadata, but also with location data'''
     sensor_location: Optional[UnitMetadataOut]

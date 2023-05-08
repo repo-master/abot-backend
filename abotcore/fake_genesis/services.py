@@ -10,12 +10,12 @@ import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import pandas as pd
 from fastapi import Depends, Response
-from sqlalchemy import and_, select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import joinedload
 
 from abotcore.db import Session, Transaction, get_session
 
-from .models import Sensor, SensorData, Unit, UnitSensorMap
+from .models import Sensor, SensorData, Unit, UnitSensorMap, SensorType
 from .schemas import (SensorDataIn, SensorDataOut, SensorMetadataLocationOut,
                       SensorMetadataOut, UnitMetadataOut)
 
@@ -108,6 +108,101 @@ class SensorDataService:
         async with self.async_session.begin() as transaction:
             self.async_session.add(SensorData(**data.dict()))
             await self.async_session.commit()
+
+    async def get_sensor_id(self,
+                            sensor_type: Optional[str],
+                            sensor_name: Optional[str],
+                            location: Optional[str]) -> Optional[SensorMetadataOut]:
+        session: Session = self.async_session
+
+        # FIXME: This is incorrect. There should be fallback methods.
+        '''
+        try:
+            sensor_type_id = await self.get_sensor_type(sensor_type=sensor_type)
+        except TypeError:
+            # TODO: ???? What is this
+            return None, "Sensor type does not exist need to raise error"
+        try:
+            unit_id = await self.get_unit_id(location)
+        except TypeError:
+            # TODO: This too, what to do here?????
+            return None, "Unit Does not exist need to raise error"
+        '''
+
+        sensor_id_search_query = select(UnitSensorMap) \
+            .join(Unit) \
+            .join(Sensor) \
+            .join(SensorType)
+
+        if sensor_type is not None:
+            sensor_id_search_query = sensor_id_search_query.where(
+                SensorType.type_name == sensor_type.lower()
+            )
+
+        if location is not None:
+            loc_sanitized = "%{}%".format(location.strip())
+            sensor_id_search_query = sensor_id_search_query.where(
+                or_(Unit.unit_alias.ilike(loc_sanitized), Unit.global_unit_name.ilike(loc_sanitized))
+            )
+
+        sensor_id_search_query = sensor_id_search_query.options(
+            joinedload(UnitSensorMap.sensor),
+            joinedload(UnitSensorMap.unit)
+        )
+
+        # TODO: Sort by some method (closest match, location, geohash, etc.)
+
+        sensor_id_result = await session.execute(
+            sensor_id_search_query
+        )
+
+        sensor_id_row = sensor_id_result.fetchone()
+
+        if sensor_id_row:
+            sensor_id = sensor_id_row[0].sensor_id
+            metadata = await self.get_sensor_metadata(sensor_id)
+            return metadata
+
+
+class UnitService:
+    def __init__(self, session: Session = Depends(get_session)) -> None:
+        self.async_session: Session = session
+
+    async def get_unit_metadata(self, unit_id: int) -> Optional[UnitMetadataOut]:
+        session: Session = self.async_session
+
+        async with session.begin():
+            meta_result = await session.execute(
+                select(Unit)
+                .where(Unit.unit_id == unit_id)
+            )
+
+            meta_row: Optional[Tuple[Unit]] = meta_result.fetchone()
+
+            if meta_row:
+                first_unit_match = meta_row[0]  # FIXME: How do we get just one? Is this correct?
+                return UnitMetadataOut(
+                    unit_urn=first_unit_match.global_unit_name,
+                    unit_id=first_unit_match.unit_id,
+                    unit_alias=first_unit_match.unit_alias
+                )
+
+    async def get_unit_list(self) -> List[UnitMetadataOut]:
+        session: Session = self.async_session
+
+        async with session.begin():
+            meta_result = await session.execute(
+                select(Unit)
+            )
+            meta_rows: List[Tuple[Unit]] = meta_result.fetchall()
+            return [
+                UnitMetadataOut(
+                    unit_urn=unit_res[0].global_unit_name,
+                    unit_id=unit_res[0].unit_id,
+                    unit_alias=unit_res[0].unit_alias
+                )
+                for unit_res in meta_rows
+            ]
 
 
 class GraphPlotService:

@@ -19,5 +19,6 @@ async def data_init():
 def main():
     asyncio.run(data_init())
 
+
 if __name__ == '__main__':
     main()
