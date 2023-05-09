@@ -27,7 +27,7 @@ class SensorDataService:
     async def get_sensor_metadata(self, sensor_id: int) -> Optional[SensorMetadataOut]:
         session: Session = self.async_session
 
-        async with session.begin():
+        async with session.begin_nested():
             meta_result = await session.execute(
                 select(Sensor)
                 .where(Sensor.sensor_id == sensor_id)
@@ -37,7 +37,7 @@ class SensorDataService:
             meta_row: Optional[Tuple[Sensor]] = meta_result.fetchone()
 
             if meta_row:
-                first_sensor_match = meta_row[0]  # FIXME: How do we get just one? Is this correct?
+                first_sensor_match, = meta_row
                 return SensorMetadataOut(
                     sensor_urn=first_sensor_match.sensor_urn,
                     sensor_id=first_sensor_match.sensor_id,
@@ -109,7 +109,7 @@ class SensorDataService:
             self.async_session.add(SensorData(**data.dict()))
             await self.async_session.commit()
 
-    async def get_sensor_id(self,
+    async def query_sensor(self,
                             sensor_type: Optional[str],
                             sensor_name: Optional[str],
                             location: Optional[str]) -> Optional[SensorMetadataOut]:
@@ -128,6 +128,8 @@ class SensorDataService:
             # TODO: This too, what to do here?????
             return None, "Unit Does not exist need to raise error"
         '''
+
+        # Construct a query that can search with given parameters, some optional
 
         sensor_id_search_query = select(UnitSensorMap) \
             .join(Unit) \
@@ -152,16 +154,17 @@ class SensorDataService:
 
         # TODO: Sort by some method (closest match, location, geohash, etc.)
 
-        sensor_id_result = await session.execute(
-            sensor_id_search_query
-        )
+        async with session.begin():
+            sensor_id_result = await session.execute(
+                sensor_id_search_query
+            )
 
-        sensor_id_row = sensor_id_result.fetchone()
+            sensor_id_row: Optional[Tuple[UnitSensorMap]] = sensor_id_result.fetchone()
 
-        if sensor_id_row:
-            sensor_id = sensor_id_row[0].sensor_id
-            metadata = await self.get_sensor_metadata(sensor_id)
-            return metadata
+            if sensor_id_row:
+                sensor_id = sensor_id_row[0].sensor_id
+                metadata = await self.get_sensor_metadata(sensor_id)
+                return metadata
 
 
 class UnitService:
@@ -180,7 +183,7 @@ class UnitService:
             meta_row: Optional[Tuple[Unit]] = meta_result.fetchone()
 
             if meta_row:
-                first_unit_match = meta_row[0]  # FIXME: How do we get just one? Is this correct?
+                first_unit_match, = meta_row
                 return UnitMetadataOut(
                     unit_urn=first_unit_match.global_unit_name,
                     unit_id=first_unit_match.unit_id,

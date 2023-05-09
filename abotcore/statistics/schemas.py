@@ -29,5 +29,7 @@ class AggregationIn(DataIn, BaseModel):
     method: Union[AggregationMethod, List[AggregationMethod]] = AggregationMethod.RECENT
     aggregation_column: Optional[str]
 
+AggregationOut = Dict[AggregationMethod, float]
+
 class OutliersIn(DataIn, BaseModel):
     outliers_column: Optional[str]

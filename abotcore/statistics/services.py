@@ -1,11 +1,11 @@
 
-from typing import List, Set, Dict, Callable, Optional, Tuple
-
-from .schemas import DataIn, AggregationIn, AggregationMethod, OutliersIn
+from typing import Callable, Dict, List, Optional, Set, Tuple
 
 import pandas as pd
-
 from fastapi import Response
+
+from .schemas import (AggregationIn, AggregationMethod, AggregationOut, DataIn,
+                      OutliersIn)
 
 
 class DataStatisticsService:
@@ -76,8 +76,8 @@ class DataStatisticsService:
         '''Calculates aggregation on given data using the given method or methods'''
         df = await self.extract_data(agg_data)
 
-        def _do_aggregation(data: pd.Series, methods: Set[AggregationMethod]) -> Dict[AggregationMethod, float]:
-            result: Dict[AggregationMethod, float] = {}
+        def _do_aggregation(data: pd.Series, methods: Set[AggregationMethod]) -> AggregationOut:
+            result: AggregationOut = {}
             for mthd in methods:
                 result[mthd] = self.AGG_METHODS[mthd](data)
             return result

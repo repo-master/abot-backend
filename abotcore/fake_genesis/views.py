@@ -99,7 +99,7 @@ async def find_sensor(sensor_type: Optional[str] = None,
                       sensor_name: Optional[str] = None,
                       location: Optional[str] = None,
                       sensor_data: SensorDataService = Depends(SensorDataService)):
-    sensor_metadata = await sensor_data.get_sensor_id(sensor_type, sensor_name, location)
+    sensor_metadata = await sensor_data.query_sensor(sensor_type, sensor_name, location)
     if sensor_metadata is None:
         raise HTTPException(404, detail="Sensor not found")
 
