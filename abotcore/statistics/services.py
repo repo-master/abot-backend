@@ -65,11 +65,15 @@ class DataStatisticsService:
             exclude={"index_column_names", "datetime_column_names"},
             exclude_unset=True
         ))
+        if data_in.datetime_column_names is not None:
+            dt_cols = data_in.datetime_column_names
+            if isinstance(dt_cols, str):
+                df[dt_cols] = pd.to_datetime(df[dt_cols], errors='ignore')
+            elif isinstance(dt_cols, list):
+                df[dt_cols] = df[dt_cols].apply(
+                    lambda col: pd.to_datetime(col, errors='ignore'), axis=0)
         if data_in.index_column_names is not None:
             df.set_index(data_in.index_column_names, inplace=True)
-        if data_in.datetime_column_names is not None:
-            df[[data_in.datetime_column_names]] = df[[data_in.datetime_column_names]].apply(
-                lambda col: pd.to_datetime(col, errors='ignore'), axis=0)
         return df
 
     async def aggregation(self, agg_data: AggregationIn):
