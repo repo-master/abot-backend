@@ -27,53 +27,53 @@ class SensorDataService:
     async def get_sensor_metadata(self, sensor_id: int) -> Optional[SensorMetadataOut]:
         session: Session = self.async_session
 
-        async with session.begin_nested():
-            meta_result = await session.execute(
-                select(Sensor)
-                .where(Sensor.sensor_id == sensor_id)
-                .options(joinedload(Sensor.sensor_type, innerjoin=True))
+        meta_result = await session.execute(
+            select(Sensor)
+            .where(Sensor.sensor_id == sensor_id)
+            .options(joinedload(Sensor.sensor_type, innerjoin=True))
+        )
+
+        meta_row: Optional[Tuple[Sensor]] = meta_result.fetchone()
+
+        if meta_row:
+            first_sensor_match, = meta_row
+            return SensorMetadataOut(
+                sensor_urn=first_sensor_match.sensor_urn,
+                sensor_id=first_sensor_match.sensor_id,
+                sensor_type=first_sensor_match.sensor_type.type_name,
+                display_unit=first_sensor_match.sensor_type.default_unit,
+                sensor_name=first_sensor_match.sensor_name,
+                sensor_alias=first_sensor_match.sensor_alias
             )
-
-            meta_row: Optional[Tuple[Sensor]] = meta_result.fetchone()
-
-            if meta_row:
-                first_sensor_match, = meta_row
-                return SensorMetadataOut(
-                    sensor_urn=first_sensor_match.sensor_urn,
-                    sensor_id=first_sensor_match.sensor_id,
-                    sensor_type=first_sensor_match.sensor_type.type_name,
-                    display_unit=first_sensor_match.sensor_type.default_unit,
-                    sensor_name=first_sensor_match.sensor_name,
-                    sensor_alias=first_sensor_match.sensor_alias
-                )
 
     async def get_sensor_list(self) -> List[SensorMetadataLocationOut]:
         session: Session = self.async_session
 
-        async with session.begin():
-            meta_result = await session.execute(
-                select(Sensor, Unit)
-                .join(UnitSensorMap, UnitSensorMap.sensor_id == Sensor.sensor_id)
-                .join(Unit, Unit.unit_id == UnitSensorMap.unit_id)
-                .options(joinedload(Sensor.sensor_type, innerjoin=True))
-            )
-            meta_rows: List[Tuple[Sensor, Unit]] = meta_result.fetchall()
-            return [
-                SensorMetadataLocationOut(
-                    sensor_urn=sensor_res[0].sensor_urn,
-                    sensor_id=sensor_res[0].sensor_id,
-                    sensor_type=sensor_res[0].sensor_type.type_name,
-                    display_unit=sensor_res[0].sensor_type.default_unit,
-                    sensor_name=sensor_res[0].sensor_name,
-                    sensor_alias=sensor_res[0].sensor_alias,
-                    sensor_location=UnitMetadataOut(
-                        unit_id=sensor_res[1].unit_id,
-                        unit_urn=sensor_res[1].global_unit_name,
-                        unit_alias=sensor_res[1].unit_alias
-                    )
+        meta_result = await session.execute(
+            select(Sensor, Unit)
+            .join(UnitSensorMap, UnitSensorMap.sensor_id == Sensor.sensor_id)
+            .join(Unit, Unit.unit_id == UnitSensorMap.unit_id)
+            .options(joinedload(Sensor.sensor_type, innerjoin=True))
+        )
+        meta_rows: List[Tuple[Sensor, Unit]] = meta_result.fetchall()
+
+        # Wrap rows into `SensorMetadataLocationOut` objects
+        return [
+            SensorMetadataLocationOut(
+                sensor_urn=sensor_res[0].sensor_urn,
+                sensor_id=sensor_res[0].sensor_id,
+                sensor_type=sensor_res[0].sensor_type.type_name,
+                display_unit=sensor_res[0].sensor_type.default_unit,
+                sensor_name=sensor_res[0].sensor_name,
+                sensor_alias=sensor_res[0].sensor_alias,
+                sensor_location=UnitMetadataOut(
+                    unit_id=sensor_res[1].unit_id,
+                    unit_urn=sensor_res[1].global_unit_name,
+                    unit_alias=sensor_res[1].unit_alias
                 )
-                for sensor_res in meta_rows
-            ]
+            )
+            for sensor_res in meta_rows
+        ]
 
     async def get_sensor_data(self,
                               sensor_id: int,
@@ -93,21 +93,18 @@ class SensorDataService:
         timestamp_from = timestamp_from.astimezone(timezone.utc).replace(tzinfo=None)
         timestamp_to = timestamp_to.astimezone(timezone.utc).replace(tzinfo=None)
 
-        async with session.begin():
-            sensor_data_query = select(SensorData) \
-                .where(SensorData.sensor_id == sensor_id) \
-                .where(and_(SensorData.timestamp >= timestamp_from, SensorData.timestamp <= timestamp_to))
+        sensor_data_query = select(SensorData) \
+            .where(SensorData.sensor_id == sensor_id) \
+            .where(and_(SensorData.timestamp >= timestamp_from, SensorData.timestamp <= timestamp_to))
 
-            data_result = await session.scalars(sensor_data_query)
-            sensor_data: List[SensorDataOut] = list(map(SensorDataOut.from_orm, data_result.fetchall()))
+        data_result = await session.scalars(sensor_data_query)
+        sensor_data: List[SensorDataOut] = list(map(SensorDataOut.from_orm, data_result.fetchall()))
 
-            return sensor_data
+        return sensor_data
 
     async def insert_sensor_data(self, data: SensorDataIn):
-        transaction: Transaction
-        async with self.async_session.begin() as transaction:
-            self.async_session.add(SensorData(**data.dict()))
-            await self.async_session.commit()
+        self.async_session.add(SensorData(**data.dict()))
+        await self.async_session.commit()
 
     async def query_sensor(self,
                             sensor_type: Optional[str],
@@ -154,17 +151,16 @@ class SensorDataService:
 
         # TODO: Sort by some method (closest match, location, geohash, etc.)
 
-        async with session.begin():
-            sensor_id_result = await session.execute(
-                sensor_id_search_query
-            )
+        sensor_id_result = await session.execute(
+            sensor_id_search_query
+        )
 
-            sensor_id_row: Optional[Tuple[UnitSensorMap]] = sensor_id_result.fetchone()
+        sensor_id_row: Optional[Tuple[UnitSensorMap]] = sensor_id_result.fetchone()
 
-            if sensor_id_row:
-                sensor_id = sensor_id_row[0].sensor_id
-                metadata = await self.get_sensor_metadata(sensor_id)
-                return metadata
+        if sensor_id_row:
+            sensor_id = sensor_id_row[0].sensor_id
+            metadata = await self.get_sensor_metadata(sensor_id)
+            return metadata
 
 
 class UnitService:
@@ -174,38 +170,36 @@ class UnitService:
     async def get_unit_metadata(self, unit_id: int) -> Optional[UnitMetadataOut]:
         session: Session = self.async_session
 
-        async with session.begin():
-            meta_result = await session.execute(
-                select(Unit)
-                .where(Unit.unit_id == unit_id)
+        meta_result = await session.execute(
+            select(Unit)
+            .where(Unit.unit_id == unit_id)
+        )
+
+        meta_row: Optional[Tuple[Unit]] = meta_result.fetchone()
+
+        if meta_row:
+            first_unit_match, = meta_row
+            return UnitMetadataOut(
+                unit_urn=first_unit_match.global_unit_name,
+                unit_id=first_unit_match.unit_id,
+                unit_alias=first_unit_match.unit_alias
             )
-
-            meta_row: Optional[Tuple[Unit]] = meta_result.fetchone()
-
-            if meta_row:
-                first_unit_match, = meta_row
-                return UnitMetadataOut(
-                    unit_urn=first_unit_match.global_unit_name,
-                    unit_id=first_unit_match.unit_id,
-                    unit_alias=first_unit_match.unit_alias
-                )
 
     async def get_unit_list(self) -> List[UnitMetadataOut]:
         session: Session = self.async_session
 
-        async with session.begin():
-            meta_result = await session.execute(
-                select(Unit)
+        meta_result = await session.execute(
+            select(Unit)
+        )
+        meta_rows: List[Tuple[Unit]] = meta_result.fetchall()
+        return [
+            UnitMetadataOut(
+                unit_urn=unit_res[0].global_unit_name,
+                unit_id=unit_res[0].unit_id,
+                unit_alias=unit_res[0].unit_alias
             )
-            meta_rows: List[Tuple[Unit]] = meta_result.fetchall()
-            return [
-                UnitMetadataOut(
-                    unit_urn=unit_res[0].global_unit_name,
-                    unit_id=unit_res[0].unit_id,
-                    unit_alias=unit_res[0].unit_alias
-                )
-                for unit_res in meta_rows
-            ]
+            for unit_res in meta_rows
+        ]
 
 
 class GraphPlotService:

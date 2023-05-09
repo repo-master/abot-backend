@@ -1,9 +1,9 @@
-fastapi~=0.94.1
-pydantic[dotenv]
-uvicorn~=0.21.0
-sqlalchemy~=1.4.47
-aiosqlite~=0.18.0
+fastapi~=0.95.
+pydantic[dotenv]~=1.10.7
+uvicorn~=0.22.0
+SQLAlchemy~=2.0.12
+aiosqlite~=0.19.0
 asyncpg~=0.27.0
 httpx~=0.24.0
-pandas~=1.5.3
-matplotlib~=3.5.3
+pandas~=2.0.1
+matplotlib~=3.7.1
