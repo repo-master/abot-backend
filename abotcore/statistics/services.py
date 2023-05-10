@@ -45,6 +45,8 @@ class DataStatisticsService:
         outliers = data.to_frame()
         outliers["is_extreme_low"] = (data < threshold[0])
         outliers["is_extreme_high"] = (data > threshold[1])
+        outliers['lower_threshold'] = threshold[0]
+        outliers['higher_threshold'] = threshold[1]
         # Filter out only actual outliers
         outliers = outliers[outliers["is_extreme_high"] | outliers['is_extreme_low']]
         return outliers.reset_index()

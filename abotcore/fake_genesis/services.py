@@ -9,6 +9,7 @@ from typing import List, Optional, Tuple
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 from fastapi import Depends, Response
 from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import joinedload
@@ -18,6 +19,7 @@ from abotcore.db import Session, Transaction, get_session
 from .models import Sensor, SensorData, Unit, UnitSensorMap, SensorType
 from .schemas import (SensorDataIn, SensorDataOut, SensorMetadataLocationOut,
                       SensorMetadataOut, UnitMetadataOut)
+from ..statistics.services import (DataStatisticsService)
 
 
 class SensorDataService:
@@ -216,7 +218,6 @@ class GraphPlotService:
                 data_value_series = df['value'].apply(pd.Series)
                 # Concatenate the data value columns to original df, remove the 'value' column from original
                 df = pd.concat([df.drop(['value'], axis=1), data_value_series], axis=1)
-
                 # Generate image plot
                 img_file.name = "report_plot.png"
                 self.plot_graph(img_file, df, x_axis='timestamp', y_axis='value', x_label="Timestamp",
@@ -236,7 +237,9 @@ class GraphPlotService:
                    y_axis,
                    x_label=None,
                    y_label=None,
-                   title=None):
+                   title=None,
+                   lower_threshold= None,
+                   higher_threshold=None):
         # plot the data
         fig, ax = plt.subplots(figsize=(10, 5))
         if y_label is not None:
@@ -244,6 +247,18 @@ class GraphPlotService:
             ax.plot(df[x_axis], df[y_axis], label=y_label)
         else:
             ax.plot(df[x_axis], df[y_axis])
+
+        # ploting outliers on chart
+        outliers = DataStatisticsService.data_get_outliers(df.set_index(x_axis)[y_axis])
+        ax.plot(outliers[x_axis], outliers[y_axis], label = "outlier", marker='o',linestyle='None')
+
+        if lower_threshold is None:
+            threshold = np.full(len(df[x_axis]), outliers['lower_threshold'][0])
+            ax.plot(df[x_axis], threshold,linestyle="dashdot",color="red", alpha=0.4, label="lower_threshold")
+        
+        if higher_threshold is None:
+            threshold = np.full(len(df[x_axis]), outliers['higher_threshold'][0])
+            ax.plot(df[x_axis], threshold, linestyle="dashdot",color="red", alpha=0.4, label="higher_threshold")
 
         # set the x-axis label and y-axis label
         if x_label is not None:
@@ -257,10 +272,10 @@ class GraphPlotService:
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d %H:%M:%S'))
         for tick in ax.get_xticklabels():
             tick.set_rotation(30)
-        ax.legend(loc='upper right', bbox_to_anchor=(1, 1.15))
+        ax.legend(loc='upper right', bbox_to_anchor=(0, -0.1))
 
         # adjust plot margins
-        fig.subplots_adjust(top=0.88, left=0.11, bottom=0.3, right=0.9)
+        fig.subplots_adjust(top=0.88, left=0.2, bottom=0.3, right=.95)
 
         # save plot as png image to memory buffer
         fig.savefig(save_file)
