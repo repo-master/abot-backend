@@ -27,6 +27,7 @@ class AggregationMethod(str, Enum):
     COUNT = 'count'
     COMPLIANCE = 'compliance'
     QUANTILE = 'quantile'
+    MEDIAN = 'median'
 
 class AggregationIn(DataIn, BaseModel):
     method: Union[AggregationMethod, List[AggregationMethod]] = AggregationMethod.RECENT

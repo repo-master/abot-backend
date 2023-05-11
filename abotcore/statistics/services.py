@@ -30,10 +30,12 @@ class DataStatisticsService:
 
     def data_std_dev(data: pd.Series, **kwargs) -> float:
         '''Returns the std value'''
-        std_dev = data.std().astype(float)
-        # print the standard deviation
-        # print('The standard deviation of column A is:', std_dev)
-        return std_dev
+        return data.std().astype(float)
+
+    def data_std_mean(data: pd.Series, **kwargs) -> float:
+        '''Returns the std value'''
+        return data.mean().astype(float)
+
 
     def data_agg_count(data: pd.Series, **kwargs) -> int:
         '''Returns the number of records'''
@@ -86,6 +88,7 @@ class DataStatisticsService:
         AggregationMethod.MAXIMUM: data_agg_max,
         AggregationMethod.MINIMUM: data_agg_min,
         AggregationMethod.STD_DEV : data_std_dev,
+        AggregationMethod.MEDIAN : data_std_mean,
         AggregationMethod.COUNT: data_agg_count,
         AggregationMethod.COMPLIANCE: data_agg_compliance,
         AggregationMethod.QUANTILE: data_agg_quantile
