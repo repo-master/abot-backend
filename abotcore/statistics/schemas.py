@@ -24,13 +24,14 @@ class AggregationMethod(str, Enum):
     MINIMUM = 'minimum'
     MAXIMUM = 'maximum'
     STD_DEV = 'std_dev'
-
+    COUNT = 'count'
+    COMPLIANCE = 'compliance'
 
 class AggregationIn(DataIn, BaseModel):
     method: Union[AggregationMethod, List[AggregationMethod]] = AggregationMethod.RECENT
     aggregation_column: Optional[str]
 
-AggregationOut = Dict[AggregationMethod, float]
+AggregationOut = Dict[AggregationMethod, Union[float, int]]
 
 class OutliersIn(DataIn, BaseModel):
     outliers_column: Optional[str]

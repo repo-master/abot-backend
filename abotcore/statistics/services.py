@@ -35,7 +35,22 @@ class DataStatisticsService:
         print('The standard deviation of column A is:', std_dev)
         return std_dev
 
-    def data_get_outliers(data: pd.Series) -> pd.DataFrame:
+    def data_agg_count(data: pd.Series) -> int:
+        '''Returns the number of records'''
+        # Yes it's that simple.
+        return data.count()
+
+    def data_agg_compliance(data: pd.Series) -> float:
+        # Get outliers (for now) with all data present
+        df_outliers = DataStatisticsService.data_get_outliers(data, False)
+        # Combine outler states
+        df_outliers['is_outlier'] = pd.Series((df_outliers['is_extreme_low'] | df_outliers['is_extreme_high']), dtype=bool)
+        # Calculate mean, and subtract it from 1.0 to get compliance.
+        # The mean will lie between 0 and 1 (inclusive) as they are boolean values
+        compliance = round(1.0 - df_outliers['is_outlier'].mean(), 3)
+        return compliance
+
+    def data_get_outliers(data: pd.Series, only_outliers: bool = True) -> pd.DataFrame:
         # Calculate the IQR of the value column
         Q1 = data.quantile(0.25)
         Q3 = data.quantile(0.75)
@@ -55,7 +70,8 @@ class DataStatisticsService:
         outliers['lower_threshold'] = threshold[0]
         outliers['higher_threshold'] = threshold[1]
         # Filter out only actual outliers
-        outliers = outliers[outliers["is_extreme_high"] | outliers['is_extreme_low']]
+        if only_outliers:
+            outliers = outliers[outliers["is_extreme_high"] | outliers['is_extreme_low']]
         return outliers.reset_index()
 
     # Enum->Method map
@@ -66,7 +82,9 @@ class DataStatisticsService:
         AggregationMethod.AVERAGE: data_agg_arithmetic_mean,
         AggregationMethod.MAXIMUM: data_agg_max,
         AggregationMethod.MINIMUM: data_agg_min,
-        AggregationMethod.STD_DEV : data_std_dev
+        AggregationMethod.STD_DEV : data_std_dev,
+        AggregationMethod.COUNT: data_agg_count,
+        AggregationMethod.COMPLIANCE: data_agg_compliance
     }
 
     async def extract_data(self, data_in: DataIn) -> pd.DataFrame:
@@ -86,7 +104,7 @@ class DataStatisticsService:
             df.set_index(data_in.index_column_names, inplace=True)
         return df
 
-    async def aggregation(self, agg_data: AggregationIn):
+    async def aggregation(self, agg_data: AggregationIn) -> AggregationOut:
         '''Calculates aggregation on given data using the given method or methods'''
         df = await self.extract_data(agg_data)
 
@@ -102,6 +120,6 @@ class DataStatisticsService:
 
         return _do_aggregation(data_series, methods)
 
-    async def outliers(self, data: OutliersIn):
+    async def outliers(self, data: OutliersIn) -> List[dict]:
         df = await self.extract_data(data)
         return DataStatisticsService.data_get_outliers(df[data.outliers_column or df.columns[-1]]).to_dict(orient='records')
