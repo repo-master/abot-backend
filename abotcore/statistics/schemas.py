@@ -26,6 +26,7 @@ class AggregationMethod(str, Enum):
     STD_DEV = 'std_dev'
     COUNT = 'count'
     COMPLIANCE = 'compliance'
+    QUANTILE = 'quantile'
 
 class AggregationIn(DataIn, BaseModel):
     method: Union[AggregationMethod, List[AggregationMethod]] = AggregationMethod.RECENT

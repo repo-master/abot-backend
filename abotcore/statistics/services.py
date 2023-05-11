@@ -50,6 +50,9 @@ class DataStatisticsService:
         compliance = round(1.0 - df_outliers['is_outlier'].mean(), 3)
         return compliance
 
+    def data_agg_quantile(data: pd.Series, **kwargs) -> float:
+        return data.quantile(float(kwargs.get('quantile_size', 0.5))).astype(float)
+
     def data_get_outliers(data: pd.Series, only_outliers: bool = True, **kwargs) -> pd.DataFrame:
         # Calculate the IQR of the value column
         Q1 = data.quantile(0.25)
@@ -84,7 +87,8 @@ class DataStatisticsService:
         AggregationMethod.MINIMUM: data_agg_min,
         AggregationMethod.STD_DEV : data_std_dev,
         AggregationMethod.COUNT: data_agg_count,
-        AggregationMethod.COMPLIANCE: data_agg_compliance
+        AggregationMethod.COMPLIANCE: data_agg_compliance,
+        AggregationMethod.QUANTILE: data_agg_quantile
     }
 
     async def extract_data(self, data_in: DataIn) -> pd.DataFrame:
