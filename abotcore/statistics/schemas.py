@@ -29,7 +29,8 @@ class AggregationMethod(str, Enum):
 
 class AggregationIn(DataIn, BaseModel):
     method: Union[AggregationMethod, List[AggregationMethod]] = AggregationMethod.RECENT
-    aggregation_column: Optional[str]
+    aggregation_column: Optional[str] = None
+    aggregation_options: Optional[Dict[str, Any]] = None
 
 AggregationOut = Dict[AggregationMethod, Union[float, int]]
 

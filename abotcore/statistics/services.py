@@ -1,5 +1,5 @@
 
-from typing import Callable, Dict, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 import pandas as pd
 from fastapi import Response
@@ -12,35 +12,35 @@ class DataStatisticsService:
     ### Aggregation methods ###
     # Takes a series as input (it has data and index) and performs some statistical operation on it.
 
-    def data_agg_recent(data: pd.Series) -> float:
+    def data_agg_recent(data: pd.Series, **kwargs) -> float:
         '''Grabs the most recent (by index) value'''
         return data.sort_index(ascending=False).iloc[0].astype(float)
 
-    def data_agg_arithmetic_mean(data: pd.Series) -> float:
+    def data_agg_arithmetic_mean(data: pd.Series, **kwargs) -> float:
         '''Calculates arithmetic mean (sum/count)'''
         return data.mean().astype(float)
 
-    def data_agg_max(data: pd.Series) -> float:
+    def data_agg_max(data: pd.Series, **kwargs) -> float:
         '''Grabs the largest value'''
         return data.max().astype(float)
 
-    def data_agg_min(data: pd.Series) -> float:
+    def data_agg_min(data: pd.Series, **kwargs) -> float:
         '''Grabs the smallest value'''
         return data.min().astype(float)
 
-    def data_std_dev(data: pd.Series) -> float:
+    def data_std_dev(data: pd.Series, **kwargs) -> float:
         '''Returns the std value'''
         std_dev = data.std().astype(float)
         # print the standard deviation
-        print('The standard deviation of column A is:', std_dev)
+        # print('The standard deviation of column A is:', std_dev)
         return std_dev
 
-    def data_agg_count(data: pd.Series) -> int:
+    def data_agg_count(data: pd.Series, **kwargs) -> int:
         '''Returns the number of records'''
         # Yes it's that simple.
         return data.count()
 
-    def data_agg_compliance(data: pd.Series) -> float:
+    def data_agg_compliance(data: pd.Series, **kwargs) -> float:
         # Get outliers (for now) with all data present
         df_outliers = DataStatisticsService.data_get_outliers(data, False)
         # Combine outler states
@@ -50,7 +50,7 @@ class DataStatisticsService:
         compliance = round(1.0 - df_outliers['is_outlier'].mean(), 3)
         return compliance
 
-    def data_get_outliers(data: pd.Series, only_outliers: bool = True) -> pd.DataFrame:
+    def data_get_outliers(data: pd.Series, only_outliers: bool = True, **kwargs) -> pd.DataFrame:
         # Calculate the IQR of the value column
         Q1 = data.quantile(0.25)
         Q3 = data.quantile(0.75)
@@ -108,17 +108,18 @@ class DataStatisticsService:
         '''Calculates aggregation on given data using the given method or methods'''
         df = await self.extract_data(agg_data)
 
-        def _do_aggregation(data: pd.Series, methods: Set[AggregationMethod]) -> AggregationOut:
+        def _do_aggregation(data: pd.Series, methods: Set[AggregationMethod], options: Dict[str, Any]) -> AggregationOut:
             result: AggregationOut = {}
             for mthd in methods:
-                result[mthd] = self.AGG_METHODS[mthd](data)
+                result[mthd] = self.AGG_METHODS[mthd](data, **options)
             return result
 
         methods: Set[AggregationMethod] = {AggregationMethod(agg_data.method)} if isinstance(
             agg_data.method, str) else set(map(AggregationMethod, agg_data.method))
         data_series: pd.Series = df[agg_data.aggregation_column or df.columns[-1]]
+        agg_options: Dict[str, Any] = agg_data.aggregation_options or {}
 
-        return _do_aggregation(data_series, methods)
+        return _do_aggregation(data_series, methods, agg_options)
 
     async def outliers(self, data: OutliersIn) -> List[dict]:
         df = await self.extract_data(data)
