@@ -23,6 +23,7 @@ class AggregationMethod(str, Enum):
     AVERAGE = 'average'
     MINIMUM = 'minimum'
     MAXIMUM = 'maximum'
+    STD_DEV = 'std_dev'
 
 
 class AggregationIn(DataIn, BaseModel):

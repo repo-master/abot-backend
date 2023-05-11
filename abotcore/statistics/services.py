@@ -28,6 +28,13 @@ class DataStatisticsService:
         '''Grabs the smallest value'''
         return data.min().astype(float)
 
+    def data_std_dev(data: pd.Series) -> float:
+        '''Returns the std value'''
+        std_dev = data.std().astype(float)
+        # print the standard deviation
+        print('The standard deviation of column A is:', std_dev)
+        return std_dev
+
     def data_get_outliers(data: pd.Series) -> pd.DataFrame:
         # Calculate the IQR of the value column
         Q1 = data.quantile(0.25)
@@ -58,7 +65,8 @@ class DataStatisticsService:
         AggregationMethod.RECENT: data_agg_recent,
         AggregationMethod.AVERAGE: data_agg_arithmetic_mean,
         AggregationMethod.MAXIMUM: data_agg_max,
-        AggregationMethod.MINIMUM: data_agg_min
+        AggregationMethod.MINIMUM: data_agg_min,
+        AggregationMethod.STD_DEV : data_std_dev
     }
 
     async def extract_data(self, data_in: DataIn) -> pd.DataFrame:
