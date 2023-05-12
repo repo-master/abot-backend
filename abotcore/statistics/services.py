@@ -36,7 +36,6 @@ class DataStatisticsService:
         '''Returns the std value'''
         return data.median().astype(float)
 
-
     def data_agg_count(data: pd.Series, **kwargs) -> int:
         '''Returns the number of records'''
         # Yes it's that simple.
@@ -46,7 +45,8 @@ class DataStatisticsService:
         # Get outliers (for now) with all data present
         df_outliers = DataStatisticsService.data_get_outliers(data, False)
         # Combine outler states
-        df_outliers['is_outlier'] = pd.Series((df_outliers['is_extreme_low'] | df_outliers['is_extreme_high']), dtype=bool)
+        df_outliers['is_outlier'] = pd.Series(
+            (df_outliers['is_extreme_low'] | df_outliers['is_extreme_high']), dtype=bool)
         # Calculate mean, and subtract it from 1.0 to get compliance.
         # The mean will lie between 0 and 1 (inclusive) as they are boolean values
         compliance = round(1.0 - df_outliers['is_outlier'].mean(), 3)
@@ -87,8 +87,8 @@ class DataStatisticsService:
         AggregationMethod.AVERAGE: data_agg_arithmetic_mean,
         AggregationMethod.MAXIMUM: data_agg_max,
         AggregationMethod.MINIMUM: data_agg_min,
-        AggregationMethod.STD_DEV : data_std_dev,
-        AggregationMethod.MEDIAN : data_std_median,
+        AggregationMethod.STD_DEV: data_std_dev,
+        AggregationMethod.MEDIAN: data_std_median,
         AggregationMethod.COUNT: data_agg_count,
         AggregationMethod.COMPLIANCE: data_agg_compliance,
         AggregationMethod.QUANTILE: data_agg_quantile
@@ -116,14 +116,14 @@ class DataStatisticsService:
         df = await self.extract_data(agg_data)
 
         if agg_data.method == AggregationMethod.SUMMARY:
-            agg_data.method = [AggregationMethod.RECENT, 
-                                   AggregationMethod.MINIMUM, 
-                                   AggregationMethod.AVERAGE, 
-                                   AggregationMethod.MAXIMUM,
-                                   AggregationMethod.STD_DEV,
-                                   AggregationMethod.MEDIAN,
-                                   AggregationMethod.COUNT
-                                   ]
+            agg_data.method = [AggregationMethod.RECENT,
+                               AggregationMethod.MINIMUM,
+                               AggregationMethod.AVERAGE,
+                               AggregationMethod.MAXIMUM,
+                               AggregationMethod.STD_DEV,
+                               AggregationMethod.MEDIAN,
+                               AggregationMethod.COUNT
+                               ]
 
         def _do_aggregation(data: pd.Series, methods: Set[AggregationMethod], options: Dict[str, Any]) -> AggregationOut:
             result: AggregationOut = {}
