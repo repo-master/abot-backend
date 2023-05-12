@@ -115,6 +115,16 @@ class DataStatisticsService:
         '''Calculates aggregation on given data using the given method or methods'''
         df = await self.extract_data(agg_data)
 
+        if agg_data.method == AggregationMethod.SUMMARY:
+            agg_data.method = [AggregationMethod.RECENT, 
+                                   AggregationMethod.MINIMUM, 
+                                   AggregationMethod.AVERAGE, 
+                                   AggregationMethod.MAXIMUM,
+                                   AggregationMethod.STD_DEV,
+                                   AggregationMethod.MEDIAN,
+                                   AggregationMethod.COUNT
+                                   ]
+
         def _do_aggregation(data: pd.Series, methods: Set[AggregationMethod], options: Dict[str, Any]) -> AggregationOut:
             result: AggregationOut = {}
             for mthd in methods:
