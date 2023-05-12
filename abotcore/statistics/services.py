@@ -32,9 +32,9 @@ class DataStatisticsService:
         '''Returns the std value'''
         return data.std().astype(float)
 
-    def data_std_mean(data: pd.Series, **kwargs) -> float:
+    def data_std_median(data: pd.Series, **kwargs) -> float:
         '''Returns the std value'''
-        return data.mean().astype(float)
+        return data.median().astype(float)
 
 
     def data_agg_count(data: pd.Series, **kwargs) -> int:
@@ -88,7 +88,7 @@ class DataStatisticsService:
         AggregationMethod.MAXIMUM: data_agg_max,
         AggregationMethod.MINIMUM: data_agg_min,
         AggregationMethod.STD_DEV : data_std_dev,
-        AggregationMethod.MEDIAN : data_std_mean,
+        AggregationMethod.MEDIAN : data_std_median,
         AggregationMethod.COUNT: data_agg_count,
         AggregationMethod.COMPLIANCE: data_agg_compliance,
         AggregationMethod.QUANTILE: data_agg_quantile
