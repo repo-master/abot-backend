@@ -317,7 +317,7 @@ class InteractiveGraphService:
             df = pd.concat([df.drop(['value'], axis=1), data_value_series], axis=1)
 
             # Generate plotly chart
-            return self.plot_sensor_graph(
+            return self.plot_sensor_graph(df, 'timestamp', 'value' , 'Timestamp', f"{sensor_metadata.sensor_type} in {sensor_metadata.display_unit}", sensor_metadata.sensor_name
                 # TODO
             )
         else:
@@ -332,25 +332,59 @@ class InteractiveGraphService:
             return fig.to_dict()
         return None
 
-    def plot_sensor_graph(self) -> pgo.Figure:
-        # Random plots
-        np.random.seed(1)
+    def plot_sensor_graph(self,
+                    df: pd.DataFrame,
+                    x_axis,
+                    y_axis,
+                    x_label=None,
+                    y_label=None,
+                    title=None,
+                    lower_threshold= None,
+                    higher_threshold=None) -> pgo.Figure:
 
-        N = 100
-        random_x = np.linspace(0, 1, N)
-        random_y0 = np.random.randn(N) + 5
-        random_y1 = np.random.randn(N)
-        random_y2 = np.random.randn(N) - 5
+
 
         # Create traces
         fig = pgo.Figure()
-        fig.add_trace(pgo.Scatter(x=random_x, y=random_y0,
+        fig.add_trace(pgo.Scatter(x=df[x_axis], y=df[y_axis],
                             mode='lines',
-                            name='lines'))
-        fig.add_trace(pgo.Scatter(x=random_x, y=random_y1,
-                            mode='lines+markers',
-                            name='lines+markers'))
-        fig.add_trace(pgo.Scatter(x=random_x, y=random_y2,
-                            mode='markers', name='markers'))
+                            name='y_axis'))
+        if x_label is not None:
+            fig.update_layout(xaxis_title=x_label )
+
+
+        # set the x-axis label and y-axis label
+        if y_label is not None:
+            fig.update_layout(yaxis_title=y_label)
+            fig.data[0].name = y_label        
+        # add title to the plot if provided
+        if title is not None:
+            fig.update_layout(title=title)
+
+        outliers = DataStatisticsService.data_get_outliers(df.set_index(x_axis)[y_axis])
+
+        fig.add_trace(pgo.Scatter(x=outliers[x_axis], y=outliers[y_axis],
+                            mode='markers', name='outlier'))
+
+
+        if lower_threshold is None:
+            threshold_array = np.full(len(df[x_axis]), outliers['lower_threshold'][0])
+            fig.add_trace(pgo.Scatter(x=df[x_axis] , y=threshold_array, line=dict(
+            color="pink",
+            width=1,
+            dash="dashdot"
+        ),
+        name="lower_threshold"))
+        
+        if higher_threshold is None:
+            threshold_array = np.full(len(df[x_axis]), outliers['higher_threshold'][0])
+            fig.add_trace(pgo.Scatter(x=df[x_axis] , y=threshold_array, line=dict(
+            color="blue",
+            width=1,
+            dash="dashdot"
+        ),
+        name="higher_threshold"))
+
+
 
         return fig
