@@ -2,24 +2,33 @@
 
 import base64
 import io
+import json
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
-import pandas as pd
 import numpy as np
-from fastapi import Depends, Response
+import pandas as pd
+import plotly.graph_objects as pgo
+from fastapi import Depends
 from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import joinedload
 
 from abotcore.db import Session, Transaction, get_session
 
-from .models import Sensor, SensorData, Unit, UnitSensorMap, SensorType
+from ..statistics.services import DataStatisticsService
+from .models import Sensor, SensorData, SensorType, Unit, UnitSensorMap
 from .schemas import (SensorDataIn, SensorDataOut, SensorMetadataLocationOut,
-                      SensorMetadataOut, UnitMetadataOut)
-from ..statistics.services import (DataStatisticsService)
+                      SensorMetadataOut, UnitMetadataOut, PlotlyFigure)
+
+
+class JSONEncodeData(json.JSONEncoder):
+    def default(self, o: Any) -> Any:
+        if isinstance(o, np.ndarray):
+            return o.tolist()
+        return super().default(o)
 
 
 class SensorDataService:
@@ -293,3 +302,46 @@ class GraphPlotService:
         #     img_mimetype = 'image/png'
         #     uri = "data:%s;base64,%s" % (img_mimetype, img_data64)
         #     return uri
+
+class InteractiveGraphService:
+    async def plot_from_sensor_data(self, sensor_metadata: SensorMetadataOut, sensor_data: List[SensorDataOut]) -> PlotlyFigure:
+        df = pd.DataFrame([x.__dict__ for x in sensor_data], index=None)
+
+        if len(df) > 0:
+            df['timestamp'] = pd.to_datetime(df['timestamp'])
+            df.sort_values('timestamp', ascending=True, inplace=True)
+            # We get a dictionary result in the 'value' column. We need to 'explode' it to separate columns.
+            data_value_series = df['value'].apply(pd.Series)
+            # Concatenate the data value columns to original df, remove the 'value' column from original
+            df = pd.concat([df.drop(['value'], axis=1), data_value_series], axis=1)
+
+            # Generate plotly chart
+            return self.plot_sensor_graph(
+                # TODO
+            ).to_dict()
+        else:
+            # No data, so there is nothing to plot. Return None
+            return
+
+    def plot_sensor_graph(self) -> pgo.Figure:
+        # Random plots
+        np.random.seed(1)
+
+        N = 100
+        random_x = np.linspace(0, 1, N)
+        random_y0 = np.random.randn(N) + 5
+        random_y1 = np.random.randn(N)
+        random_y2 = np.random.randn(N) - 5
+
+        # Create traces
+        fig = pgo.Figure()
+        fig.add_trace(pgo.Scatter(x=random_x, y=random_y0,
+                            mode='lines',
+                            name='lines'))
+        fig.add_trace(pgo.Scatter(x=random_x, y=random_y1,
+                            mode='lines+markers',
+                            name='lines+markers'))
+        fig.add_trace(pgo.Scatter(x=random_x, y=random_y2,
+                            mode='markers', name='markers'))
+
+        return fig

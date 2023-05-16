@@ -1,12 +1,32 @@
 
+import json
 import urllib.parse
 from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse, HTMLResponse
 
-from .schemas import SensorDataIn
-from .services import GraphPlotService, SensorDataService, UnitService
+from .schemas import SensorDataIn, PlotlyFigureOut
+from .services import (GraphPlotService, InteractiveGraphService,
+                       JSONEncodeData, SensorDataService, UnitService)
+
+
+class FixedJSONResponse(JSONResponse):
+    def __init__(self, *args, json_encoder=None, **kwargs):
+        self._encoder=json_encoder
+        super().__init__(*args, **kwargs)
+
+    def render(self, content) -> bytes:
+        return json.dumps(
+            content,
+            ensure_ascii=False,
+            allow_nan=False,
+            indent=None,
+            cls=self._encoder,
+            separators=(",", ":"),
+        ).encode("utf-8")
+
 
 # Main endpoint router for fake Genesis
 router = APIRouter(prefix='/genesis')
@@ -17,6 +37,12 @@ data_router = APIRouter(prefix="/data")
 # Endpoints for querying various aspects of the system itself
 query_router = APIRouter(prefix="/query")
 
+# TODO: TEST ONLY!! See below for real endpoint
+@router.get('/test_plotly')
+async def test_plotly_chart(
+        ig_service: InteractiveGraphService = Depends(InteractiveGraphService)):
+    fig = ig_service.plot_sensor_graph()
+    return HTMLResponse(fig.to_html())
 
 #### /genesis/data/ ####
 
@@ -69,6 +95,20 @@ async def data_report(sensor_id: int,
 
     return response
 
+@data_router.get('/report/interactive')
+async def interactive_plot(
+        sensor_id: int,
+        timestamp_from: Optional[datetime] = None,
+        timestamp_to: Optional[datetime] = None,
+        sensor_data: SensorDataService = Depends(SensorDataService),
+        ig_service: InteractiveGraphService = Depends(InteractiveGraphService)) -> PlotlyFigureOut:
+    # TODO
+
+    sensor_metadata = await sensor_data.get_sensor_metadata(sensor_id)
+    sensor_point_data = await sensor_data.get_sensor_data(sensor_id, timestamp_from, timestamp_to)
+
+    fig = await ig_service.plot_from_sensor_data(sensor_metadata, sensor_point_data)
+    return FixedJSONResponse(fig, json_encoder=JSONEncodeData)
 
 @data_router.post('/sensor/insert')
 async def insert_sensor_data(data: SensorDataIn,

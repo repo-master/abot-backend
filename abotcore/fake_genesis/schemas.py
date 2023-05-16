@@ -1,7 +1,7 @@
 '''Data validation schemas (Pydantic) used by genesis endpoints'''
 
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel
 from typing_extensions import NotRequired, TypedDict
@@ -49,3 +49,18 @@ class SensorMetadataOut(BaseModel):
 class SensorMetadataLocationOut(SensorMetadataOut):
     '''Sensor's metadata, but also with location data'''
     sensor_location: Optional[UnitMetadataOut]
+
+
+class PlotlyTrace(BaseModel):
+    mode: str
+    name: str
+    type: str
+    x: Optional[List[Union[float, Any]]]
+    y: Optional[List[Union[float, Any]]]
+
+class PlotlyFigure(BaseModel):
+    data: List[PlotlyTrace]
+    layout: Dict
+
+class PlotlyFigureOut(PlotlyFigure):
+    pass
