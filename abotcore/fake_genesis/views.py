@@ -40,9 +40,18 @@ query_router = APIRouter(prefix="/query")
 # TODO: TEST ONLY!! See below for real endpoint
 @router.get('/test_plotly')
 async def test_plotly_chart(
+        sensor_id: int,
+        timestamp_from: Optional[datetime] = None,
+        timestamp_to: Optional[datetime] = None,
+        sensor_data: SensorDataService = Depends(SensorDataService),
         ig_service: InteractiveGraphService = Depends(InteractiveGraphService)):
-    fig = ig_service.plot_sensor_graph()
-    return HTMLResponse(fig.to_html())
+    sensor_metadata = await sensor_data.get_sensor_metadata(sensor_id)
+    sensor_point_data = await sensor_data.get_sensor_data(sensor_id, timestamp_from, timestamp_to)
+
+    fig = await ig_service.figure_from_sensor_data(sensor_metadata, sensor_point_data)
+    if fig:
+        return HTMLResponse(fig.to_html())
+    raise HTTPException(400, detail="Failed to generate figure. There was no data to process.")
 
 #### /genesis/data/ ####
 
@@ -95,6 +104,7 @@ async def data_report(sensor_id: int,
 
     return response
 
+# Generate plotly chart JSON
 @data_router.get('/report/interactive')
 async def interactive_plot(
         sensor_id: int,
@@ -107,7 +117,7 @@ async def interactive_plot(
     sensor_metadata = await sensor_data.get_sensor_metadata(sensor_id)
     sensor_point_data = await sensor_data.get_sensor_data(sensor_id, timestamp_from, timestamp_to)
 
-    fig = await ig_service.plot_from_sensor_data(sensor_metadata, sensor_point_data)
+    fig = await ig_service.plot_from_sensor_data_json(sensor_metadata, sensor_point_data)
     return FixedJSONResponse(fig, json_encoder=JSONEncodeData)
 
 @data_router.post('/sensor/insert')

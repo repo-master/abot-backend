@@ -304,9 +304,10 @@ class GraphPlotService:
         #     return uri
 
 class InteractiveGraphService:
-    async def plot_from_sensor_data(self, sensor_metadata: SensorMetadataOut, sensor_data: List[SensorDataOut]) -> PlotlyFigure:
+    async def figure_from_sensor_data(self,
+                                    sensor_metadata: SensorMetadataOut,
+                                    sensor_data: List[SensorDataOut]) -> Optional[pgo.Figure]:
         df = pd.DataFrame([x.__dict__ for x in sensor_data], index=None)
-
         if len(df) > 0:
             df['timestamp'] = pd.to_datetime(df['timestamp'])
             df.sort_values('timestamp', ascending=True, inplace=True)
@@ -318,10 +319,18 @@ class InteractiveGraphService:
             # Generate plotly chart
             return self.plot_sensor_graph(
                 # TODO
-            ).to_dict()
+            )
         else:
             # No data, so there is nothing to plot. Return None
-            return
+            return None
+
+    async def plot_from_sensor_data_json(self,
+                                    sensor_metadata: SensorMetadataOut,
+                                    sensor_data: List[SensorDataOut]) -> Optional[PlotlyFigure]:
+        fig = await self.figure_from_sensor_data(sensor_metadata, sensor_data)
+        if fig:
+            return fig.to_dict()
+        return None
 
     def plot_sensor_graph(self) -> pgo.Figure:
         # Random plots
