@@ -94,6 +94,16 @@ class DataStatisticsService:
         AggregationMethod.QUANTILE: data_agg_quantile
     }
 
+    AGG_SUMMARY_METHODS: Set[AggregationMethod] = {
+        AggregationMethod.RECENT,
+        AggregationMethod.MINIMUM,
+        AggregationMethod.AVERAGE,
+        AggregationMethod.MAXIMUM,
+        AggregationMethod.STD_DEV,
+        AggregationMethod.MEDIAN,
+        AggregationMethod.COUNT
+    }
+
     async def extract_data(self, data_in: DataIn) -> pd.DataFrame:
         df = pd.DataFrame(**data_in.dict(
             include=DataIn.__fields__.keys(),
@@ -115,19 +125,16 @@ class DataStatisticsService:
         '''Calculates aggregation on given data using the given method or methods'''
         df = await self.extract_data(agg_data)
 
-        if agg_data.method == AggregationMethod.SUMMARY:
-            agg_data.method = [AggregationMethod.RECENT,
-                               AggregationMethod.MINIMUM,
-                               AggregationMethod.AVERAGE,
-                               AggregationMethod.MAXIMUM,
-                               AggregationMethod.STD_DEV,
-                               AggregationMethod.MEDIAN,
-                               AggregationMethod.COUNT
-                               ]
-
         def _do_aggregation(data: pd.Series, methods: Set[AggregationMethod], options: Dict[str, Any]) -> AggregationOut:
             result: AggregationOut = {}
             for mthd in methods:
+                if mthd == AggregationMethod.SUMMARY:
+                    result.update(_do_aggregation(
+                        data,
+                        self.AGG_SUMMARY_METHODS,
+                        options
+                    ))
+                    continue
                 result[mthd] = self.AGG_METHODS[mthd](data, **options)
             return result
 
