@@ -83,7 +83,7 @@ async def data_report(sensor_id: int,
     async with graph_plot.plot_from_sensor_data(sensor_metadata, sensor_point_data) as graph_image:
         if graph_image is None:
             # Image was not generated
-            raise HTTPException(404, detail="Sensor data unavailable")
+            raise HTTPException(400, detail="Sensor data unavailable")
         graph_data_uri = graph_plot.image_to_data_uri(graph_image)
 
     report_page_params = {
@@ -112,11 +112,8 @@ async def interactive_plot(
         timestamp_to: Optional[datetime] = None,
         sensor_data: SensorDataService = Depends(SensorDataService),
         ig_service: InteractiveGraphService = Depends(InteractiveGraphService)) -> PlotlyFigureOut:
-    # TODO
-
     sensor_metadata = await sensor_data.get_sensor_metadata(sensor_id)
     sensor_point_data = await sensor_data.get_sensor_data(sensor_id, timestamp_from, timestamp_to)
-
     fig = await ig_service.plot_from_sensor_data_json(sensor_metadata, sensor_point_data)
     return FixedJSONResponse(fig, json_encoder=JSONEncodeData)
 
@@ -134,7 +131,7 @@ async def get_sensor_metadata(sensor_id: int,
                               sensor_data: SensorDataService = Depends(SensorDataService)):
     sensor_metadata = await sensor_data.get_sensor_metadata(sensor_id)
     if sensor_metadata is None:
-        raise HTTPException(404, detail="Sensor does not exist")
+        raise HTTPException(400, detail="Sensor of id %d does not exist" % sensor_id)
     return sensor_metadata
 
 # TODO: Add filters
@@ -151,7 +148,7 @@ async def find_sensor(sensor_type: Optional[str] = None,
                       sensor_data: SensorDataService = Depends(SensorDataService)):
     sensor_metadata = await sensor_data.query_sensor(sensor_type, sensor_name, location)
     if sensor_metadata is None:
-        raise HTTPException(404, detail="Sensor not found")
+        raise HTTPException(400, detail="Sensor not found")
 
     return sensor_metadata
 
@@ -160,7 +157,7 @@ async def find_sensor(sensor_type: Optional[str] = None,
 async def get_unit_metadata(unit_id: int, unit_service: UnitService = Depends(UnitService)):
     unit_metadata = await unit_service.get_unit_metadata(unit_id)
     if unit_metadata is None:
-        raise HTTPException(404, detail="Unit does not exist")
+        raise HTTPException(400, detail="Unit of id %d does not exist" % unit_id)
     return unit_metadata
 
 # TODO: Add filters
