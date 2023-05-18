@@ -39,23 +39,44 @@ class SensorDataService:
         session: Session = self.async_session
 
         meta_result = await session.execute(
-            select(Sensor)
+            select(Sensor, Unit)
+            .join(UnitSensorMap, UnitSensorMap.sensor_id == Sensor.sensor_id)
+            .join(Unit, Unit.unit_id == UnitSensorMap.unit_id)
             .where(Sensor.sensor_id == sensor_id)
             .options(joinedload(Sensor.sensor_type, innerjoin=True))
         )
 
-        meta_row: Optional[Tuple[Sensor]] = meta_result.fetchone()
+        # meta_row: Optional[Tuple[Sensor]] = meta_result.fetchone()
 
-        if meta_row:
-            first_sensor_match, = meta_row
-            return SensorMetadataOut(
-                sensor_urn=first_sensor_match.sensor_urn,
-                sensor_id=first_sensor_match.sensor_id,
-                sensor_type=first_sensor_match.sensor_type.type_name,
-                display_unit=first_sensor_match.sensor_type.default_unit,
-                sensor_name=first_sensor_match.sensor_name,
-                sensor_alias=first_sensor_match.sensor_alias
-            )
+
+        meta_row: List[Tuple[Sensor, Unit]] = meta_result.fetchall()[0]
+        print(meta_row)
+        return SensorMetadataLocationOut(
+                sensor_urn=meta_row[0].sensor_urn,
+                sensor_id=meta_row[0].sensor_id,
+                sensor_type=meta_row[0].sensor_type.type_name,
+                display_unit=meta_row[0].sensor_type.default_unit,
+                sensor_name=meta_row[0].sensor_name,
+                sensor_alias=meta_row[0].sensor_alias,
+                sensor_location=UnitMetadataOut(
+                    unit_id=meta_row[1].unit_id,
+                    unit_urn=meta_row[1].global_unit_name,
+                    unit_alias=meta_row[1].unit_alias
+                )
+        )
+
+
+        # if meta_row:
+        #     first_sensor_match, = meta_row
+        #     return SensorMetadataLocationOut(
+        #         sensor_urn=first_sensor_match.sensor_urn,
+        #         sensor_id=first_sensor_match.sensor_id,
+        #         sensor_type=first_sensor_match.sensor_type.type_name,
+        #         display_unit=first_sensor_match.sensor_type.default_unit,
+        #         sensor_name=first_sensor_match.sensor_name,
+        #         sensor_alias=first_sensor_match.sensor_alias,
+        #         sensor_location = 
+        #     )
 
     async def get_sensor_list(self) -> List[SensorMetadataLocationOut]:
         session: Session = self.async_session
@@ -144,15 +165,21 @@ class SensorDataService:
             .join(Sensor) \
             .join(SensorType)
 
-        if sensor_type is not None:
+        if sensor_type != "":
             sensor_id_search_query = sensor_id_search_query.where(
                 SensorType.type_name == sensor_type.lower()
             )
 
-        if location is not None:
+        if location != "":
             loc_sanitized = "%{}%".format(location.strip())
             sensor_id_search_query = sensor_id_search_query.where(
                 or_(Unit.unit_alias.ilike(loc_sanitized), Unit.global_unit_name.ilike(loc_sanitized))
+            )
+       
+        if sensor_name != "":
+            name_sanitized = "%{}%".format(sensor_name.strip())
+            sensor_id_search_query = sensor_id_search_query.where(
+                or_(Sensor.sensor_alias.ilike(name_sanitized), Sensor.sensor_name.ilike(name_sanitized))
             )
 
         sensor_id_search_query = sensor_id_search_query.options(
