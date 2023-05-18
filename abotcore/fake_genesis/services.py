@@ -35,7 +35,7 @@ class SensorDataService:
     def __init__(self, session: Session = Depends(get_session)) -> None:
         self.async_session: Session = session
 
-    async def get_sensor_metadata(self, sensor_id: int) -> Optional[SensorMetadataOut]:
+    async def get_sensor_metadata(self, sensor_id: int) -> Optional[SensorMetadataLocationOut]:
         session: Session = self.async_session
 
         meta_result = await session.execute(
@@ -141,7 +141,7 @@ class SensorDataService:
     async def query_sensor(self,
                             sensor_type: Optional[str],
                             sensor_name: Optional[str],
-                            location: Optional[str]) -> Optional[SensorMetadataOut]:
+                            location: Optional[str]) -> Optional[SensorMetadataLocationOut]:
         session: Session = self.async_session
 
         # FIXME: This is incorrect. There should be fallback methods.
