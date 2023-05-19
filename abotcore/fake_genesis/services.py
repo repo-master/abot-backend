@@ -28,6 +28,8 @@ class JSONEncodeData(json.JSONEncoder):
     def default(self, o: Any) -> Any:
         if isinstance(o, np.ndarray):
             return o.tolist()
+        if isinstance(o, datetime):
+            return o.isoformat()
         return super().default(o)
 
 

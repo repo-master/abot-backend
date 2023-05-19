@@ -74,22 +74,23 @@ async def data_report(sensor_id: int,
                       timestamp_from: Optional[datetime] = None,
                       timestamp_to: Optional[datetime] = None,
                       sensor_data: SensorDataService = Depends(SensorDataService),
-                      graph_plot: GraphPlotService = Depends(GraphPlotService)):
+                      graph_plot: GraphPlotService = Depends(GraphPlotService),
+                      ig_service: InteractiveGraphService = Depends(InteractiveGraphService)):
     graph_data_uri: Optional[str] = None
     sensor_metadata = await sensor_data.get_sensor_metadata(sensor_id)
     sensor_point_data = await sensor_data.get_sensor_data(sensor_id, timestamp_from, timestamp_to)
 
     # Generate plot image
     async with graph_plot.plot_from_sensor_data(sensor_metadata, sensor_point_data) as graph_image:
-        if graph_image is None:
-            # Image was not generated
-            raise HTTPException(400, detail="Sensor data unavailable")
-        graph_data_uri = graph_plot.image_to_data_uri(graph_image)
+        if graph_image is not None:
+            graph_data_uri = graph_plot.image_to_data_uri(graph_image)
+
+    fig_interactive = await ig_service.plot_from_sensor_data_json(sensor_metadata, sensor_point_data)
+
 
     report_page_params = {
         'sensor_id': sensor_id
     }
-
     if timestamp_from is not None:
         report_page_params.update({'time_from': timestamp_from.isoformat()})
     if timestamp_to is not None:
@@ -99,10 +100,11 @@ async def data_report(sensor_id: int,
 
     response = {
         'interactive_report_route': interactive_report_url,
-        'preview_image': graph_data_uri
+        'preview_image': graph_data_uri,
+        'plot_interactive': fig_interactive
     }
 
-    return response
+    return FixedJSONResponse(response, json_encoder=JSONEncodeData)
 
 # Generate plotly chart JSON
 @data_router.get('/report/interactive')
