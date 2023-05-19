@@ -52,7 +52,7 @@ class SensorDataService:
 
 
         meta_row: List[Tuple[Sensor, Unit]] = meta_result.fetchall()[0]
-        print(meta_row)
+
         return SensorMetadataLocationOut(
                 sensor_urn=meta_row[0].sensor_urn,
                 sensor_id=meta_row[0].sensor_id,
