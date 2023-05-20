@@ -48,12 +48,10 @@ class SensorDataService:
             .options(joinedload(Sensor.sensor_type, innerjoin=True))
         )
 
-        # meta_row: Optional[Tuple[Sensor]] = meta_result.fetchone()
+        meta_row: Optional[Tuple[Sensor, Unit]] = meta_result.fetchone()
 
-
-        meta_row: List[Tuple[Sensor, Unit]] = meta_result.fetchall()[0]
-
-        return SensorMetadataLocationOut(
+        if meta_row:
+            return SensorMetadataLocationOut(
                 sensor_urn=meta_row[0].sensor_urn,
                 sensor_id=meta_row[0].sensor_id,
                 sensor_type=meta_row[0].sensor_type.type_name,
@@ -65,20 +63,7 @@ class SensorDataService:
                     unit_urn=meta_row[1].global_unit_name,
                     unit_alias=meta_row[1].unit_alias
                 )
-        )
-
-
-        # if meta_row:
-        #     first_sensor_match, = meta_row
-        #     return SensorMetadataLocationOut(
-        #         sensor_urn=first_sensor_match.sensor_urn,
-        #         sensor_id=first_sensor_match.sensor_id,
-        #         sensor_type=first_sensor_match.sensor_type.type_name,
-        #         display_unit=first_sensor_match.sensor_type.default_unit,
-        #         sensor_name=first_sensor_match.sensor_name,
-        #         sensor_alias=first_sensor_match.sensor_alias,
-        #         sensor_location = 
-        #     )
+            )
 
     async def get_sensor_list(self) -> List[SensorMetadataLocationOut]:
         session: Session = self.async_session
@@ -141,9 +126,9 @@ class SensorDataService:
         await self.async_session.commit()
 
     async def query_sensor(self,
-                            sensor_type: Optional[str],
-                            sensor_name: Optional[str],
-                            location: Optional[str]) -> Optional[SensorMetadataLocationOut]:
+                           sensor_type: Optional[str],
+                           sensor_name: Optional[str],
+                           location: Optional[str]) -> Optional[SensorMetadataLocationOut]:
         session: Session = self.async_session
 
         # FIXME: This is incorrect. There should be fallback methods.
@@ -177,7 +162,7 @@ class SensorDataService:
             sensor_id_search_query = sensor_id_search_query.where(
                 or_(Unit.unit_alias.ilike(loc_sanitized), Unit.global_unit_name.ilike(loc_sanitized))
             )
-       
+
         if sensor_name != "":
             name_sanitized = "%{}%".format(sensor_name.strip())
             sensor_id_search_query = sensor_id_search_query.where(
@@ -276,7 +261,7 @@ class GraphPlotService:
                    x_label=None,
                    y_label=None,
                    title=None,
-                   lower_threshold= None,
+                   lower_threshold=None,
                    higher_threshold=None):
         # plot the data
         fig, ax = plt.subplots(figsize=(10, 5))
@@ -288,15 +273,15 @@ class GraphPlotService:
 
         # ploting outliers on chart
         outliers = DataStatisticsService.data_get_outliers(df.set_index(x_axis)[y_axis])
-        ax.plot(outliers[x_axis], outliers[y_axis], label = "outlier", marker='o',linestyle='None')
+        ax.plot(outliers[x_axis], outliers[y_axis], label="outlier", marker='o', linestyle='None')
 
         if lower_threshold is None:
             threshold = np.full(len(df[x_axis]), outliers['lower_threshold'][0])
-            ax.plot(df[x_axis], threshold,linestyle="dashdot",color="red", alpha=0.4, label="lower_threshold")
-        
+            ax.plot(df[x_axis], threshold, linestyle="dashdot", color="red", alpha=0.4, label="lower_threshold")
+
         if higher_threshold is None:
             threshold = np.full(len(df[x_axis]), outliers['higher_threshold'][0])
-            ax.plot(df[x_axis], threshold, linestyle="dashdot",color="red", alpha=0.4, label="higher_threshold")
+            ax.plot(df[x_axis], threshold, linestyle="dashdot", color="red", alpha=0.4, label="higher_threshold")
 
         # set the x-axis label and y-axis label
         if x_label is not None:
@@ -332,10 +317,11 @@ class GraphPlotService:
         #     uri = "data:%s;base64,%s" % (img_mimetype, img_data64)
         #     return uri
 
+
 class InteractiveGraphService:
     async def figure_from_sensor_data(self,
-                                    sensor_metadata: SensorMetadataOut,
-                                    sensor_data: List[SensorDataOut]) -> Optional[pgo.Figure]:
+                                      sensor_metadata: SensorMetadataOut,
+                                      sensor_data: List[SensorDataOut]) -> Optional[pgo.Figure]:
         df = pd.DataFrame([x.__dict__ for x in sensor_data], index=None)
         if len(df) > 0:
             df['timestamp'] = pd.to_datetime(df['timestamp'])
@@ -346,46 +332,43 @@ class InteractiveGraphService:
             df = pd.concat([df.drop(['value'], axis=1), data_value_series], axis=1)
 
             # Generate plotly chart
-            return self.plot_sensor_graph(df, 'timestamp', 'value' , 'Timestamp', f"{sensor_metadata.sensor_type} in {sensor_metadata.display_unit}", sensor_metadata.sensor_name
-                # TODO
-            )
+            return self.plot_sensor_graph(df, 'timestamp', 'value', 'Timestamp', f"{sensor_metadata.sensor_type} in {sensor_metadata.display_unit}", sensor_metadata.sensor_name
+                                          # TODO
+                                          )
         else:
             # No data, so there is nothing to plot. Return None
             return None
 
     async def plot_from_sensor_data_json(self,
-                                    sensor_metadata: SensorMetadataOut,
-                                    sensor_data: List[SensorDataOut]) -> Optional[PlotlyFigure]:
+                                         sensor_metadata: SensorMetadataOut,
+                                         sensor_data: List[SensorDataOut]) -> Optional[PlotlyFigure]:
         fig = await self.figure_from_sensor_data(sensor_metadata, sensor_data)
         if fig:
             return fig.to_dict()
         return None
 
     def plot_sensor_graph(self,
-                    df: pd.DataFrame,
-                    x_axis,
-                    y_axis,
-                    x_label=None,
-                    y_label=None,
-                    title=None,
-                    lower_threshold= None,
-                    higher_threshold=None) -> pgo.Figure:
-
-
+                          df: pd.DataFrame,
+                          x_axis,
+                          y_axis,
+                          x_label=None,
+                          y_label=None,
+                          title=None,
+                          lower_threshold=None,
+                          higher_threshold=None) -> pgo.Figure:
 
         # Create traces
         fig = pgo.Figure()
         fig.add_trace(pgo.Scatter(x=df[x_axis], y=df[y_axis],
-                            mode='lines',
-                            name='y_axis'))
+                                  mode='lines',
+                                  name='y_axis'))
         if x_label is not None:
-            fig.update_layout(xaxis_title=x_label )
-
+            fig.update_layout(xaxis_title=x_label)
 
         # set the x-axis label and y-axis label
         if y_label is not None:
             fig.update_layout(yaxis_title=y_label)
-            fig.data[0].name = y_label        
+            fig.data[0].name = y_label
         # add title to the plot if provided
         if title is not None:
             fig.update_layout(title=title)
@@ -393,27 +376,24 @@ class InteractiveGraphService:
         outliers = DataStatisticsService.data_get_outliers(df.set_index(x_axis)[y_axis])
 
         fig.add_trace(pgo.Scatter(x=outliers[x_axis], y=outliers[y_axis],
-                            mode='markers', name='outlier'))
-
+                                  mode='markers', name='outlier'))
 
         if lower_threshold is None:
             threshold_array = np.full(len(df[x_axis]), outliers['lower_threshold'][0])
-            fig.add_trace(pgo.Scatter(x=df[x_axis] , y=threshold_array, line=dict(
-            color="pink",
-            width=1,
-            dash="dashdot"
-        ),
-        name="lower_threshold"))
-        
+            fig.add_trace(pgo.Scatter(x=df[x_axis], y=threshold_array, line=dict(
+                color="pink",
+                width=1,
+                dash="dashdot"
+            ),
+                name="lower_threshold"))
+
         if higher_threshold is None:
             threshold_array = np.full(len(df[x_axis]), outliers['higher_threshold'][0])
-            fig.add_trace(pgo.Scatter(x=df[x_axis] , y=threshold_array, line=dict(
-            color="blue",
-            width=1,
-            dash="dashdot"
-        ),
-        name="higher_threshold"))
-
-
+            fig.add_trace(pgo.Scatter(x=df[x_axis], y=threshold_array, line=dict(
+                color="blue",
+                width=1,
+                dash="dashdot"
+            ),
+                name="higher_threshold"))
 
         return fig

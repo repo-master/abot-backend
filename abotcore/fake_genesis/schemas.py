@@ -58,9 +58,11 @@ class PlotlyTrace(BaseModel):
     x: Optional[List[Union[float, Any]]]
     y: Optional[List[Union[float, Any]]]
 
+
 class PlotlyFigure(BaseModel):
     data: List[PlotlyTrace]
     layout: Dict
+
 
 class PlotlyFigureOut(PlotlyFigure):
     pass

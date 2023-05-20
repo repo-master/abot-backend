@@ -30,12 +30,15 @@ class AggregationMethod(str, Enum):
     MEDIAN = 'median'
     SUMMARY = 'summary'
 
+
 class AggregationIn(DataIn, BaseModel):
     method: Union[AggregationMethod, List[AggregationMethod]] = AggregationMethod.RECENT
     aggregation_column: Optional[str] = None
     aggregation_options: Optional[Dict[str, Any]] = None
 
+
 AggregationOut = Dict[AggregationMethod, Union[float, int]]
+
 
 class OutliersIn(DataIn, BaseModel):
     outliers_column: Optional[str]

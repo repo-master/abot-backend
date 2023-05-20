@@ -14,7 +14,7 @@ from .services import (GraphPlotService, InteractiveGraphService,
 
 class FixedJSONResponse(JSONResponse):
     def __init__(self, *args, json_encoder=None, **kwargs):
-        self._encoder=json_encoder
+        self._encoder = json_encoder
         super().__init__(*args, **kwargs)
 
     def render(self, content) -> bytes:
@@ -38,6 +38,8 @@ data_router = APIRouter(prefix="/data")
 query_router = APIRouter(prefix="/query")
 
 # TODO: TEST ONLY!! See below for real endpoint
+
+
 @router.get('/test_plotly')
 async def test_plotly_chart(
         sensor_id: int,
@@ -54,6 +56,7 @@ async def test_plotly_chart(
     raise HTTPException(400, detail="Failed to generate figure. There was no data to process.")
 
 #### /genesis/data/ ####
+
 
 @data_router.get("/sensor")
 async def sensor_data(sensor_id: int,
@@ -87,7 +90,6 @@ async def data_report(sensor_id: int,
 
     fig_interactive = await ig_service.plot_from_sensor_data_json(sensor_metadata, sensor_point_data)
 
-
     report_page_params = {
         'sensor_id': sensor_id
     }
@@ -107,6 +109,8 @@ async def data_report(sensor_id: int,
     return FixedJSONResponse(response, json_encoder=JSONEncodeData)
 
 # Generate plotly chart JSON
+
+
 @data_router.get('/report/interactive')
 async def interactive_plot(
         sensor_id: int,
@@ -118,6 +122,7 @@ async def interactive_plot(
     sensor_point_data = await sensor_data.get_sensor_data(sensor_id, timestamp_from, timestamp_to)
     fig = await ig_service.plot_from_sensor_data_json(sensor_metadata, sensor_point_data)
     return FixedJSONResponse(fig, json_encoder=JSONEncodeData)
+
 
 @data_router.post('/sensor/insert')
 async def insert_sensor_data(data: SensorDataIn,
@@ -137,6 +142,8 @@ async def get_sensor_metadata(sensor_id: int,
     return sensor_metadata
 
 # TODO: Add filters
+
+
 @query_router.get("/sensor/list")
 async def sensor_list(sensor_data: SensorDataService = Depends(SensorDataService)):
     all_sensors = await sensor_data.get_sensor_list()
@@ -163,6 +170,8 @@ async def get_unit_metadata(unit_id: int, unit_service: UnitService = Depends(Un
     return unit_metadata
 
 # TODO: Add filters
+
+
 @query_router.get("/unit/list")
 async def unit_list(unit_service: UnitService = Depends(UnitService)):
     all_units = await unit_service.get_unit_list()
