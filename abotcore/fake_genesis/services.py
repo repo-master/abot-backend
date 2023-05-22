@@ -152,18 +152,18 @@ class SensorDataService:
             .join(Sensor) \
             .join(SensorType)
 
-        if sensor_type != "":
+        if sensor_type is not None and sensor_type != "":
             sensor_id_search_query = sensor_id_search_query.where(
                 SensorType.type_name == sensor_type.lower()
             )
 
-        if location != "":
+        if location is not None and location != "":
             loc_sanitized = "%{}%".format(location.strip())
             sensor_id_search_query = sensor_id_search_query.where(
                 or_(Unit.unit_alias.ilike(loc_sanitized), Unit.global_unit_name.ilike(loc_sanitized))
             )
 
-        if sensor_name != "":
+        if sensor_name is not None and sensor_name != "":
             name_sanitized = "%{}%".format(sensor_name.strip())
             sensor_id_search_query = sensor_id_search_query.where(
                 or_(Sensor.sensor_alias.ilike(name_sanitized), Sensor.sensor_name.ilike(name_sanitized))
