@@ -277,11 +277,11 @@ class GraphPlotService:
 
         if lower_threshold is None:
             threshold = np.full(len(df[x_axis]), outliers['lower_threshold'][0])
-            ax.plot(df[x_axis], threshold, linestyle="dashdot", color="red", alpha=0.4, label="lower_threshold")
+            ax.plot(df[x_axis], threshold, linestyle="dashdot", color="red", alpha=0.4, label="Lower threshold")
 
         if higher_threshold is None:
             threshold = np.full(len(df[x_axis]), outliers['higher_threshold'][0])
-            ax.plot(df[x_axis], threshold, linestyle="dashdot", color="red", alpha=0.4, label="higher_threshold")
+            ax.plot(df[x_axis], threshold, linestyle="dashdot", color="red", alpha=0.4, label="Upper threshold")
 
         # set the x-axis label and y-axis label
         if x_label is not None:
@@ -332,9 +332,7 @@ class InteractiveGraphService:
             df = pd.concat([df.drop(['value'], axis=1), data_value_series], axis=1)
 
             # Generate plotly chart
-            return self.plot_sensor_graph(df, 'timestamp', 'value', 'Timestamp', f"{sensor_metadata.sensor_type} in {sensor_metadata.display_unit}", sensor_metadata.sensor_name
-                                          # TODO
-                                          )
+            return self.plot_sensor_graph(df, 'timestamp', 'value', 'Timestamp', f"{sensor_metadata.sensor_type} in {sensor_metadata.display_unit}", sensor_metadata.sensor_name)
         else:
             # No data, so there is nothing to plot. Return None
             return None
@@ -385,7 +383,7 @@ class InteractiveGraphService:
                 width=1,
                 dash="dashdot"
             ),
-                name="lower_threshold"))
+                name="Lower threshold"))
 
         if higher_threshold is None:
             threshold_array = np.full(len(df[x_axis]), outliers['higher_threshold'][0])
@@ -394,6 +392,6 @@ class InteractiveGraphService:
                 width=1,
                 dash="dashdot"
             ),
-                name="higher_threshold"))
+                name="Upper threshold"))
 
         return fig

@@ -23,7 +23,7 @@ class AggregationMethod(str, Enum):
     AVERAGE = 'average'
     MINIMUM = 'minimum'
     MAXIMUM = 'maximum'
-    STD_DEV = 'std_dev'
+    STDDEV = 'stddev'
     COUNT = 'count'
     COMPLIANCE = 'compliance'
     QUANTILE = 'quantile'
