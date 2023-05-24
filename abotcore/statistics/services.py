@@ -87,7 +87,7 @@ class DataStatisticsService:
         AggregationMethod.AVERAGE: data_agg_arithmetic_mean,
         AggregationMethod.MAXIMUM: data_agg_max,
         AggregationMethod.MINIMUM: data_agg_min,
-        AggregationMethod.STD_DEV: data_std_dev,
+        AggregationMethod.STDDEV: data_std_dev,
         AggregationMethod.MEDIAN: data_std_median,
         AggregationMethod.COUNT: data_agg_count,
         AggregationMethod.COMPLIANCE: data_agg_compliance,
@@ -99,7 +99,7 @@ class DataStatisticsService:
         AggregationMethod.MINIMUM,
         AggregationMethod.AVERAGE,
         AggregationMethod.MAXIMUM,
-        AggregationMethod.STD_DEV,
+        AggregationMethod.STDDEV,
         AggregationMethod.MEDIAN,
         AggregationMethod.COUNT
     }
