@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as pgo
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import joinedload
 
@@ -128,7 +128,7 @@ class SensorDataService:
     async def query_sensor(self,
                            sensor_type: Optional[str],
                            sensor_name: Optional[str],
-                           location: Optional[str]) -> Optional[SensorMetadataLocationOut]:
+                           location: Optional[str]) -> List[SensorMetadataLocationOut]:
         session: Session = self.async_session
 
         # FIXME: This is incorrect. There should be fallback methods.
@@ -145,47 +145,70 @@ class SensorDataService:
             return None, "Unit Does not exist need to raise error"
         '''
 
+        input_check = False
         # Construct a query that can search with given parameters, some optional
 
-        sensor_id_search_query = select(UnitSensorMap) \
+        sensor_id_search_query = select(Sensor, Unit, UnitSensorMap) \
             .join(Unit) \
             .join(Sensor) \
             .join(SensorType)
 
         if sensor_type is not None and sensor_type != "":
+            input_check = True
             sensor_id_search_query = sensor_id_search_query.where(
                 SensorType.type_name == sensor_type.lower()
             )
 
         if location is not None and location != "":
+            input_check = True
             loc_sanitized = "%{}%".format(location.strip())
             sensor_id_search_query = sensor_id_search_query.where(
                 or_(Unit.unit_alias.ilike(loc_sanitized), Unit.global_unit_name.ilike(loc_sanitized))
             )
 
         if sensor_name is not None and sensor_name != "":
+            input_check = True
             name_sanitized = "%{}%".format(sensor_name.strip())
             sensor_id_search_query = sensor_id_search_query.where(
                 or_(Sensor.sensor_alias.ilike(name_sanitized), Sensor.sensor_name.ilike(name_sanitized))
             )
 
-        sensor_id_search_query = sensor_id_search_query.options(
+        if not input_check:
+            raise HTTPException(403, "No input parameters provided.")
+
+        sensor_search_query = sensor_id_search_query.options(
             joinedload(UnitSensorMap.sensor),
-            joinedload(UnitSensorMap.unit)
+            joinedload(UnitSensorMap.unit),
+            joinedload(Sensor.sensor_type, innerjoin=True)
         )
 
         # TODO: Sort by some method (closest match, location, geohash, etc.)
 
-        sensor_id_result = await session.execute(
-            sensor_id_search_query
+        sensor_search_result = await session.execute(
+            sensor_search_query
         )
 
-        sensor_id_row: Optional[Tuple[UnitSensorMap]] = sensor_id_result.fetchone()
+        sensor_rows: List[Tuple[Sensor, Unit, UnitSensorMap]] = sensor_search_result.fetchall()
 
-        if sensor_id_row:
-            sensor_id = sensor_id_row[0].sensor_id
-            metadata = await self.get_sensor_metadata(sensor_id)
-            return metadata
+        if len(sensor_rows) == 0:
+            raise HTTPException(400, detail="Sensor not found")
+
+        return [
+            SensorMetadataLocationOut(
+                sensor_urn=sensor_res[0].sensor_urn,
+                sensor_id=sensor_res[0].sensor_id,
+                sensor_type=sensor_res[0].sensor_type.type_name,
+                display_unit=sensor_res[0].sensor_type.default_unit,
+                sensor_name=sensor_res[0].sensor_name,
+                sensor_alias=sensor_res[0].sensor_alias,
+                sensor_location=UnitMetadataOut(
+                    unit_id=sensor_res[1].unit_id,
+                    unit_urn=sensor_res[1].global_unit_name,
+                    unit_alias=sensor_res[1].unit_alias
+                )
+            )
+            for sensor_res in sensor_rows
+        ]
 
 
 class UnitService:
