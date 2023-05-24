@@ -174,7 +174,7 @@ class SensorDataService:
             )
 
         if not input_check:
-            raise HTTPException(403, "No input parameters provided.")
+            raise HTTPException(403, "Neither sensor name nor sensor type was provided.")
 
         sensor_search_query = sensor_id_search_query.options(
             joinedload(UnitSensorMap.sensor),
