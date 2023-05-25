@@ -1,40 +1,25 @@
 
-import asyncio
 import logging
 
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-
-from contextlib import asynccontextmanager
+from fastapi.responses import JSONResponse
 
 # Routers
-from abotcore import (
-    chat,
-    fake_genesis,
-    statistics
-)
-
+from abotcore import chat, fake_genesis, statistics
 from abotcore.config import Settings
-
-from typing import List, Optional, Coroutine
-
-
-@asynccontextmanager
-async def app_lifespan(app: FastAPI):
-    tasks = [
-
-    ]
-    cleanup: List[Optional[Coroutine]] = await asyncio.gather(*tasks)
-    yield
-    await asyncio.gather(*filter(asyncio.iscoroutine, cleanup))
 
 
 def create_app() -> FastAPI:
     ### Application instance ###
-    app = FastAPI(lifespan=app_lifespan)
-    logger = logging.getLogger(__name__)
+    app = FastAPI()
     settings = Settings()
+
+    logging.basicConfig(
+        level=settings.log_level
+    )
+
+    logger = logging.getLogger(__name__)
 
     ### Middleware ###
 
@@ -50,10 +35,28 @@ def create_app() -> FastAPI:
     ### App events ###
     @app.on_event("startup")
     async def init_tables():
-        from abotcore.db import Base, Connection, get_engine
+        import asyncio
+        from abotcore.db import Base, Connection, get_engine, get_schema_mapping
+        from sqlalchemy.schema import CreateSchema
+
         engine = get_engine()
         conn: Connection
+
+        schema_mapping = get_schema_mapping()
+
         async with engine.begin() as conn:
+            logger.info("Creating/updating DB schema (if needed)...")
+            await asyncio.gather(*[
+                conn.execute(
+                    CreateSchema(schema_mapping.get(schema_name), if_not_exists=True)
+                )
+                # TODO: Auto-get this list from SQLAlchemy somehow...
+                for schema_name in [
+                    'genesis'
+                ]
+                if schema_mapping.get(schema_name)
+            ])
+            logger.info("Creating/updating tables (if needed)...")
             await conn.run_sync(Base.metadata.create_all)
 
     ### Exception handlers ###

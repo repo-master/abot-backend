@@ -9,7 +9,12 @@ from sqlalchemy.orm import Mapped, relationship
 from abotcore.db import Base, ReadableMixin
 
 
-class SensorType(Base):
+class GenesisBase(Base):
+    __abstract__ = True
+    __table_args__ = {'schema': 'genesis'}
+
+
+class SensorType(GenesisBase):
     __tablename__ = 'sensor_type'
     sensor_type: Mapped[int] = Column(
         'sensor_type',
@@ -27,7 +32,7 @@ class SensorType(Base):
     )
 
 
-class Sensor(ReadableMixin, Base):
+class Sensor(ReadableMixin, GenesisBase):
     __tablename__ = 'sensors'
 
     # Columns
@@ -43,7 +48,7 @@ class Sensor(ReadableMixin, Base):
     )
     sensor_type_id: Mapped[int] = Column(
         'sensor_type',
-        ForeignKey('sensor_type.sensor_type')
+        ForeignKey(SensorType.sensor_type)
     )
     sensor_name: Mapped[str] = Column(
         'sensor_name',
@@ -54,10 +59,10 @@ class Sensor(ReadableMixin, Base):
         String
     )
 
-    sensor_type: Mapped["SensorType"] = relationship("SensorType")
+    sensor_type: Mapped["SensorType"] = relationship(SensorType)
 
 
-class SensorData(ReadableMixin, Base):
+class SensorData(ReadableMixin, GenesisBase):
     __tablename__ = 'sensor_data'
 
     # Columns
@@ -73,7 +78,7 @@ class SensorData(ReadableMixin, Base):
     )
     sensor_id: Mapped[int] = Column(
         'sensor_id',
-        ForeignKey('sensors.sensor_id')
+        ForeignKey(Sensor.sensor_id)
     )
     value: Mapped[dict] = Column(
         'value',
@@ -81,7 +86,7 @@ class SensorData(ReadableMixin, Base):
     )
 
 
-class Unit(ReadableMixin, Base):
+class Unit(ReadableMixin, GenesisBase):
     __tablename__ = 'units'
 
     # Columns
@@ -98,7 +103,7 @@ class Unit(ReadableMixin, Base):
     updated_ts = Column(DateTime)
 
 
-class UnitSensorMap(ReadableMixin, Base):
+class UnitSensorMap(ReadableMixin, GenesisBase):
     __tablename__ = 'unit_sensor_map'
     # Columns
     unit_sensor_map_id: Mapped[int] = Column(
@@ -109,11 +114,11 @@ class UnitSensorMap(ReadableMixin, Base):
     )
     unit_id: Mapped[int] = Column(
         'unit_id',
-        ForeignKey('units.unit_id')
+        ForeignKey(Unit.unit_id)
     )
     sensor_id: Mapped[int] = Column(
         'sensor_id',
-        ForeignKey('sensors.sensor_id')
+        ForeignKey(Sensor.sensor_id)
     )
 
     unit: Mapped["Unit"] = relationship("Unit")
