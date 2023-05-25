@@ -38,25 +38,29 @@ def create_app() -> FastAPI:
         import asyncio
         from abotcore.db import Base, Connection, get_engine, get_schema_mapping
         from sqlalchemy.schema import CreateSchema
+        from multiprocessing import Lock
 
         engine = get_engine()
         conn: Connection
 
+        mutex = Lock()
+
         schema_mapping = get_schema_mapping()
 
-        async with engine.begin() as conn:
-            logger.info("Creating/updating DB schema (if needed)...")
-            await asyncio.gather(*[
-                conn.execute(
-                    CreateSchema(schema_mapping.get(schema_name) or schema_name, if_not_exists=True)
-                )
-                # TODO: Auto-get this list from SQLAlchemy somehow...
-                for schema_name in [
-                    'genesis'
-                ]
-            ])
-            logger.info("Creating/updating tables (if needed)...")
-            await conn.run_sync(Base.metadata.create_all)
+        with mutex: # Prevent multiple workers conflicting with each other
+            async with engine.begin() as conn:
+                logger.info("Creating/updating DB schema (if needed)...")
+                await asyncio.gather(*[
+                    conn.execute(
+                        CreateSchema(schema_mapping.get(schema_name, schema_name), if_not_exists=True)
+                    )
+                    # TODO: Auto-get this list from SQLAlchemy somehow...
+                    for schema_name in [
+                        'genesis'
+                    ]
+                ])
+                logger.info("Creating/updating tables (if needed)...")
+                await conn.run_sync(Base.metadata.create_all)
 
     ### Exception handlers ###
 
