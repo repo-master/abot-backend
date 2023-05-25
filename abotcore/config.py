@@ -8,7 +8,7 @@ from pydantic import AnyUrl, BaseSettings, PostgresDsn
 
 class Settings(BaseSettings):
     cors_origins: List[str] = ['*']
-    log_level: Union[int, str] = logging.INFO
+    app_log_level: Union[int, str] = logging.INFO
 
 class EndpointSettings(BaseSettings):
     rasa_rest_endpoint_base: AnyUrl = "http://localhost:5005"
