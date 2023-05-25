@@ -48,13 +48,12 @@ def create_app() -> FastAPI:
             logger.info("Creating/updating DB schema (if needed)...")
             await asyncio.gather(*[
                 conn.execute(
-                    CreateSchema(schema_mapping.get(schema_name), if_not_exists=True)
+                    CreateSchema(schema_mapping.get(schema_name) or schema_name, if_not_exists=True)
                 )
                 # TODO: Auto-get this list from SQLAlchemy somehow...
                 for schema_name in [
                     'genesis'
                 ]
-                if schema_mapping.get(schema_name)
             ])
             logger.info("Creating/updating tables (if needed)...")
             await conn.run_sync(Base.metadata.create_all)
