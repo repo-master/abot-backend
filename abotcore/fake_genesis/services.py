@@ -116,6 +116,7 @@ class SensorDataService:
         self.async_session.add(SensorData(**data.dict()))
         await self.async_session.commit()
 
+    # TODO: Query by only single string
     async def query_sensor(self,
                            sensor_type: Optional[str],
                            sensor_name: Optional[str],

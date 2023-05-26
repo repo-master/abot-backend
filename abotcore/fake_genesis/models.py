@@ -138,6 +138,7 @@ class SensorStatus(GenesisBase):
         'last_value',
         JSON(none_as_null=True)
     )
+    # TODO: Rename to last_value_time
     last_timestamp: Mapped[datetime] = Column(
         'last_timestamp',
         DateTime
