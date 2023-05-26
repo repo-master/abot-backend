@@ -299,12 +299,14 @@ class GraphPlotService:
         ax.plot(outliers[x_axis], outliers[y_axis], label="outlier", marker='o', linestyle='None')
 
         if lower_threshold is None:
-            threshold = np.full(len(df[x_axis]), outliers['lower_threshold'][0])
-            ax.plot(df[x_axis], threshold, linestyle="dashdot", color="red", alpha=0.4, label="Lower threshold")
+            if outliers['lower_threshold'][0] is not None:
+                threshold = np.full(len(df[x_axis]), outliers['lower_threshold'][0])
+                ax.plot(df[x_axis], threshold, linestyle="dashdot", color="red", alpha=0.4, label="Lower threshold")
 
         if higher_threshold is None:
-            threshold = np.full(len(df[x_axis]), outliers['higher_threshold'][0])
-            ax.plot(df[x_axis], threshold, linestyle="dashdot", color="red", alpha=0.4, label="Upper threshold")
+            if outliers['higher_threshold'][0] is not None:
+                threshold = np.full(len(df[x_axis]), outliers['higher_threshold'][0])
+                ax.plot(df[x_axis], threshold, linestyle="dashdot", color="red", alpha=0.4, label="Upper threshold")
 
         # set the x-axis label and y-axis label
         if x_label is not None:
