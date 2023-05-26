@@ -262,15 +262,16 @@ class GraphPlotService:
 
         # ploting outliers on chart
         outliers = DataStatisticsService.data_get_outliers(df.set_index(x_axis)[y_axis])
-        ax.plot(outliers[x_axis], outliers[y_axis], label="outlier", marker='o', linestyle='None')
+        if not outliers.empty:
+            ax.plot(outliers[x_axis], outliers[y_axis], label="outlier", marker='o', linestyle='None')
 
         if lower_threshold is None:
-            if outliers['lower_threshold'][0] is not None:
+            if not outliers.empty:
                 threshold = np.full(len(df[x_axis]), outliers['lower_threshold'][0])
                 ax.plot(df[x_axis], threshold, linestyle="dashdot", color="red", alpha=0.4, label="Lower threshold")
 
         if higher_threshold is None:
-            if outliers['higher_threshold'][0] is not None:
+            if not outliers.empty:
                 threshold = np.full(len(df[x_axis]), outliers['higher_threshold'][0])
                 ax.plot(df[x_axis], threshold, linestyle="dashdot", color="red", alpha=0.4, label="Upper threshold")
 
@@ -364,25 +365,28 @@ class InteractiveGraphService:
 
         outliers = DataStatisticsService.data_get_outliers(df.set_index(x_axis)[y_axis])
 
-        fig.add_trace(pgo.Scatter(x=outliers[x_axis], y=outliers[y_axis],
-                                  mode='markers', name='outlier'))
+        if not outliers.empty:
+            fig.add_trace(pgo.Scatter(x=outliers[x_axis], y=outliers[y_axis],
+                                      mode='markers', name='outlier'))
 
         if lower_threshold is None:
-            threshold_array = np.full(len(df[x_axis]), outliers['lower_threshold'][0])
-            fig.add_trace(pgo.Scatter(x=df[x_axis], y=threshold_array, line=dict(
-                color="pink",
-                width=1,
-                dash="dashdot"
-            ),
-                name="Lower threshold"))
+            if not outliers.empty:
+                threshold_array = np.full(len(df[x_axis]), outliers['lower_threshold'][0])
+                fig.add_trace(pgo.Scatter(x=df[x_axis], y=threshold_array, line=dict(
+                    color="pink",
+                    width=1,
+                    dash="dashdot"
+                ),
+                    name="Lower threshold"))
 
         if higher_threshold is None:
-            threshold_array = np.full(len(df[x_axis]), outliers['higher_threshold'][0])
-            fig.add_trace(pgo.Scatter(x=df[x_axis], y=threshold_array, line=dict(
-                color="blue",
-                width=1,
-                dash="dashdot"
-            ),
-                name="Upper threshold"))
+            if not outliers.empty:
+                threshold_array = np.full(len(df[x_axis]), outliers['higher_threshold'][0])
+                fig.add_trace(pgo.Scatter(x=df[x_axis], y=threshold_array, line=dict(
+                    color="blue",
+                    width=1,
+                    dash="dashdot"
+                ),
+                    name="Upper threshold"))
 
         return fig
