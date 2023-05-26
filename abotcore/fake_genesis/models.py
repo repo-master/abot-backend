@@ -8,12 +8,17 @@ from sqlalchemy.orm import Mapped, relationship
 from sqlalchemy.sql import func
 
 from abotcore.db import Base, ReadableMixin
+from .ddl import register_post_relation_handlers
 
+
+# Abstract Base model
 
 class GenesisBase(Base):
     __abstract__ = True
     __table_args__ = {'schema': 'genesis'}
 
+
+# Enum classes
 
 class SensorType(GenesisBase):
     __tablename__ = 'sensor_type'
@@ -32,6 +37,23 @@ class SensorType(GenesisBase):
         String
     )
 
+
+class SensorHealth(GenesisBase):
+    __tablename__ = 'sensor_health'
+    sensor_health_id: Mapped[int] = Column(
+        'sensor_health_id',
+        Integer,
+        Identity(start=1),
+        primary_key=True
+    )
+    code_name: Mapped[str] = Column(
+        'code_name',
+        String,
+        nullable=False
+    )
+
+
+# Data relations
 
 class Sensor(ReadableMixin, GenesisBase):
     __tablename__ = 'sensors'
@@ -86,6 +108,7 @@ class SensorData(ReadableMixin, GenesisBase):
         JSON(none_as_null=True)
     )
 
+
 class SensorStatus(GenesisBase):
     __tablename__ = 'sensor_status'
 
@@ -119,6 +142,16 @@ class SensorStatus(GenesisBase):
         'last_timestamp',
         DateTime
     )
+    sensor_health_id: Mapped[dict] = Column(
+        'sensor_health_id',
+        ForeignKey(SensorHealth.sensor_health_id),
+    )
+    last_health_time: Mapped[datetime] = Column(
+        'last_health_time',
+        DateTime,
+        server_default=func.now()
+    )
+    sensor_health: Mapped["SensorHealth"] = relationship(SensorHealth, lazy=False)
 
 
 class Unit(ReadableMixin, GenesisBase):
@@ -126,7 +159,7 @@ class Unit(ReadableMixin, GenesisBase):
 
     # Columns
     unit_id = Column(Integer, primary_key=True, autoincrement=True)
-    global_unit_name = Column(String, nullable=False, unique=True)
+    unit_urn = Column(String, nullable=False, unique=True)
     unit_alias = Column(String, unique=True)
     is_active = Column(Boolean)
     is_warehouse_level_unit = Column(Boolean, default=False)
@@ -162,3 +195,6 @@ class UnitSensorMap(ReadableMixin, GenesisBase):
 
     unit: Mapped["Unit"] = relationship("Unit")
     sensor: Mapped["Sensor"] = relationship("Sensor")
+
+
+# register_post_relation_handlers(GenesisBase)

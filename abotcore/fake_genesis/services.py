@@ -19,9 +19,10 @@ from sqlalchemy.orm import joinedload
 from abotcore.db import Session, Transaction, get_session
 
 from ..statistics.services import DataStatisticsService
-from .models import Sensor, SensorData, SensorType, Unit, UnitSensorMap
-from .schemas import (SensorDataIn, SensorDataOut, SensorMetadataLocationOut,
-                      SensorMetadataOut, UnitMetadataOut, PlotlyFigure)
+from .models import (Sensor, SensorData, SensorStatus, SensorType, Unit,
+                     UnitSensorMap)
+from .schemas import (PlotlyFigure, SensorValue, SensorDataOut, SensorMetadataBase,
+                      SensorMetadataOut, UnitMetadata, SensorStateOut, SensorHealthOut)
 
 
 class JSONEncodeData(json.JSONEncoder):
@@ -37,62 +38,52 @@ class SensorDataService:
     def __init__(self, session: Session = Depends(get_session)) -> None:
         self.async_session: Session = session
 
-    async def get_sensor_metadata(self, sensor_id: int) -> Optional[SensorMetadataLocationOut]:
+    @staticmethod
+    def create_sensor_metadata(result: Tuple[Sensor, Unit, SensorStatus]) -> SensorMetadataOut:
+        return SensorMetadataOut(
+            sensor_urn=result[0].sensor_urn,
+            sensor_id=result[0].sensor_id,
+            sensor_type=result[0].sensor_type.type_name,
+            display_unit=result[0].sensor_type.default_unit,
+            sensor_name=result[0].sensor_name,
+            sensor_alias=result[0].sensor_alias,
+            sensor_location=UnitMetadata.from_orm(result[1]) if result[1] else None,
+            sensor_status=SensorStateOut.from_orm(result[2]) if result[2] else None
+        )
+
+    async def get_sensor_metadata(self, sensor_id: int) -> Optional[SensorMetadataOut]:
         session: Session = self.async_session
 
         meta_result = await session.execute(
-            select(Sensor, Unit)
-            .join(UnitSensorMap, UnitSensorMap.sensor_id == Sensor.sensor_id)
-            .join(Unit, Unit.unit_id == UnitSensorMap.unit_id)
+            select(Sensor, Unit, SensorStatus)
+            .join(UnitSensorMap, UnitSensorMap.sensor_id == Sensor.sensor_id, isouter=True)
+            .join(Unit, Unit.unit_id == UnitSensorMap.unit_id, isouter=True)
+            .join(SensorStatus, isouter=True)
             .where(Sensor.sensor_id == sensor_id)
-            .options(joinedload(Sensor.sensor_type, innerjoin=True))
+            .options(
+                joinedload(Sensor.sensor_type, innerjoin=True)
+            )
         )
 
-        meta_row: Optional[Tuple[Sensor, Unit]] = meta_result.fetchone()
+        meta_row: Optional[Tuple[Sensor, Unit, SensorStatus]] = meta_result.fetchone()
 
         if meta_row:
-            return SensorMetadataLocationOut(
-                sensor_urn=meta_row[0].sensor_urn,
-                sensor_id=meta_row[0].sensor_id,
-                sensor_type=meta_row[0].sensor_type.type_name,
-                display_unit=meta_row[0].sensor_type.default_unit,
-                sensor_name=meta_row[0].sensor_name,
-                sensor_alias=meta_row[0].sensor_alias,
-                sensor_location=UnitMetadataOut(
-                    unit_id=meta_row[1].unit_id,
-                    unit_urn=meta_row[1].global_unit_name,
-                    unit_alias=meta_row[1].unit_alias
-                )
-            )
+            return self.create_sensor_metadata(meta_row)
 
-    async def get_sensor_list(self) -> List[SensorMetadataLocationOut]:
+    async def get_sensor_list(self) -> List[SensorMetadataOut]:
         session: Session = self.async_session
 
         meta_result = await session.execute(
-            select(Sensor, Unit)
-            .join(UnitSensorMap, UnitSensorMap.sensor_id == Sensor.sensor_id)
-            .join(Unit, Unit.unit_id == UnitSensorMap.unit_id)
+            select(Sensor, Unit, SensorStatus)
+            .join(UnitSensorMap, UnitSensorMap.sensor_id == Sensor.sensor_id, isouter=True)
+            .join(Unit, Unit.unit_id == UnitSensorMap.unit_id, isouter=True)
+            .join(SensorStatus, isouter=True)
             .options(joinedload(Sensor.sensor_type, innerjoin=True))
         )
-        meta_rows: List[Tuple[Sensor, Unit]] = meta_result.fetchall()
+        meta_rows: List[Tuple[Sensor, Unit, SensorStatus]] = meta_result.fetchall()
 
-        # Wrap rows into `SensorMetadataLocationOut` objects
-        return [
-            SensorMetadataLocationOut(
-                sensor_urn=sensor_res[0].sensor_urn,
-                sensor_id=sensor_res[0].sensor_id,
-                sensor_type=sensor_res[0].sensor_type.type_name,
-                display_unit=sensor_res[0].sensor_type.default_unit,
-                sensor_name=sensor_res[0].sensor_name,
-                sensor_alias=sensor_res[0].sensor_alias,
-                sensor_location=UnitMetadataOut(
-                    unit_id=sensor_res[1].unit_id,
-                    unit_urn=sensor_res[1].global_unit_name,
-                    unit_alias=sensor_res[1].unit_alias
-                )
-            )
-            for sensor_res in meta_rows
-        ]
+        # Wrap rows into `SensorMetadataOut` objects
+        return list(map(self.create_sensor_metadata, meta_rows))
 
     async def get_sensor_data(self,
                               sensor_id: int,
@@ -121,14 +112,14 @@ class SensorDataService:
 
         return sensor_data
 
-    async def insert_sensor_data(self, data: SensorDataIn):
+    async def insert_sensor_data(self, data: SensorData):
         self.async_session.add(SensorData(**data.dict()))
         await self.async_session.commit()
 
     async def query_sensor(self,
                            sensor_type: Optional[str],
                            sensor_name: Optional[str],
-                           location: Optional[str]) -> List[SensorMetadataLocationOut]:
+                           location: Optional[str]) -> List[SensorMetadataOut]:
         session: Session = self.async_session
 
         # FIXME: This is incorrect. There should be fallback methods.
@@ -148,10 +139,11 @@ class SensorDataService:
         input_check = False
         # Construct a query that can search with given parameters, some optional
 
-        sensor_id_search_query = select(Sensor, Unit, UnitSensorMap) \
+        sensor_id_search_query = select(Sensor, Unit, SensorStatus, UnitSensorMap) \
             .join(Unit) \
             .join(Sensor) \
-            .join(SensorType)
+            .join(SensorType) \
+            .join(SensorStatus, isouter=True)
 
         if sensor_type is not None and sensor_type != "":
             input_check = True
@@ -163,7 +155,7 @@ class SensorDataService:
             input_check = True
             loc_sanitized = "%{}%".format(location.strip())
             sensor_id_search_query = sensor_id_search_query.where(
-                or_(Unit.unit_alias.ilike(loc_sanitized), Unit.global_unit_name.ilike(loc_sanitized))
+                or_(Unit.unit_alias.ilike(loc_sanitized), Unit.unit_urn.ilike(loc_sanitized))
             )
 
         if sensor_name is not None and sensor_name != "":
@@ -188,34 +180,19 @@ class SensorDataService:
             sensor_search_query
         )
 
-        sensor_rows: List[Tuple[Sensor, Unit, UnitSensorMap]] = sensor_search_result.fetchall()
+        sensor_rows: List[Tuple[Sensor, Unit, SensorStatus, UnitSensorMap]] = sensor_search_result.fetchall()
 
         if len(sensor_rows) == 0:
             raise HTTPException(400, detail="Sensor not found")
 
-        return [
-            SensorMetadataLocationOut(
-                sensor_urn=sensor_res[0].sensor_urn,
-                sensor_id=sensor_res[0].sensor_id,
-                sensor_type=sensor_res[0].sensor_type.type_name,
-                display_unit=sensor_res[0].sensor_type.default_unit,
-                sensor_name=sensor_res[0].sensor_name,
-                sensor_alias=sensor_res[0].sensor_alias,
-                sensor_location=UnitMetadataOut(
-                    unit_id=sensor_res[1].unit_id,
-                    unit_urn=sensor_res[1].global_unit_name,
-                    unit_alias=sensor_res[1].unit_alias
-                )
-            )
-            for sensor_res in sensor_rows
-        ]
+        return list(map(self.create_sensor_metadata, sensor_rows))
 
 
 class UnitService:
     def __init__(self, session: Session = Depends(get_session)) -> None:
         self.async_session: Session = session
 
-    async def get_unit_metadata(self, unit_id: int) -> Optional[UnitMetadataOut]:
+    async def get_unit_metadata(self, unit_id: int) -> Optional[UnitMetadata]:
         session: Session = self.async_session
 
         meta_result = await session.execute(
@@ -227,32 +204,21 @@ class UnitService:
 
         if meta_row:
             first_unit_match, = meta_row
-            return UnitMetadataOut(
-                unit_urn=first_unit_match.global_unit_name,
-                unit_id=first_unit_match.unit_id,
-                unit_alias=first_unit_match.unit_alias
-            )
+            return UnitMetadata.from_orm(first_unit_match)
 
-    async def get_unit_list(self) -> List[UnitMetadataOut]:
+    async def get_unit_list(self) -> List[UnitMetadata]:
         session: Session = self.async_session
 
         meta_result = await session.execute(
             select(Unit)
         )
         meta_rows: List[Tuple[Unit]] = meta_result.fetchall()
-        return [
-            UnitMetadataOut(
-                unit_urn=unit_res[0].global_unit_name,
-                unit_id=unit_res[0].unit_id,
-                unit_alias=unit_res[0].unit_alias
-            )
-            for unit_res in meta_rows
-        ]
+        return list(map(UnitMetadata.from_orm, [x[0] for x in meta_rows]))
 
 
 class GraphPlotService:
     @asynccontextmanager
-    async def plot_from_sensor_data(self, sensor_metadata: SensorMetadataOut, sensor_data: List[SensorDataOut]) -> Optional[io.BytesIO]:
+    async def plot_from_sensor_data(self, sensor_metadata: SensorMetadataBase, sensor_data: List[SensorDataOut]) -> Optional[io.BytesIO]:
         img_file = io.BytesIO()
         df = pd.DataFrame([x.__dict__ for x in sensor_data], index=None)
 
@@ -345,7 +311,7 @@ class GraphPlotService:
 
 class InteractiveGraphService:
     async def figure_from_sensor_data(self,
-                                      sensor_metadata: SensorMetadataOut,
+                                      sensor_metadata: SensorMetadataBase,
                                       sensor_data: List[SensorDataOut]) -> Optional[pgo.Figure]:
         df = pd.DataFrame([x.__dict__ for x in sensor_data], index=None)
         if len(df) > 0:
@@ -363,7 +329,7 @@ class InteractiveGraphService:
             return None
 
     async def plot_from_sensor_data_json(self,
-                                         sensor_metadata: SensorMetadataOut,
+                                         sensor_metadata: SensorMetadataBase,
                                          sensor_data: List[SensorDataOut]) -> Optional[PlotlyFigure]:
         fig = await self.figure_from_sensor_data(sensor_metadata, sensor_data)
         if fig:

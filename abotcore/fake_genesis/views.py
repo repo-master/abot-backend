@@ -7,7 +7,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse, HTMLResponse
 
-from .schemas import SensorDataIn, PlotlyFigureOut
+from .schemas import SensorDataBase, PlotlyFigureOut
 from .services import (GraphPlotService, InteractiveGraphService,
                        JSONEncodeData, SensorDataService, UnitService)
 
@@ -125,7 +125,7 @@ async def interactive_plot(
 
 
 @data_router.post('/sensor/insert')
-async def insert_sensor_data(data: SensorDataIn,
+async def insert_sensor_data(data: SensorDataBase,
                              sensor_data: SensorDataService = Depends(SensorDataService)):
     await sensor_data.insert_sensor_data(data)
     return {"status": "ok"}
