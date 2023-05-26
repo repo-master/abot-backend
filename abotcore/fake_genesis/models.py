@@ -5,6 +5,7 @@ from datetime import datetime
 from sqlalchemy import (JSON, Boolean, Column, DateTime, Float, ForeignKey,
                         Identity, Integer, String)
 from sqlalchemy.orm import Mapped, relationship
+from sqlalchemy.sql import func
 
 from abotcore.db import Base, ReadableMixin
 
@@ -72,17 +73,51 @@ class SensorData(ReadableMixin, GenesisBase):
         Identity(start=1),
         primary_key=True
     )
-    timestamp: Mapped[datetime] = Column(
-        'timestamp',
-        DateTime
-    )
     sensor_id: Mapped[int] = Column(
         'sensor_id',
         ForeignKey(Sensor.sensor_id)
     )
+    timestamp: Mapped[datetime] = Column(
+        'timestamp',
+        DateTime
+    )
     value: Mapped[dict] = Column(
         'value',
         JSON(none_as_null=True)
+    )
+
+class SensorStatus(GenesisBase):
+    __tablename__ = 'sensor_status'
+
+    # Columns
+    sensor_status_id: Mapped[int] = Column(
+        'sensor_status_id',
+        Integer,
+        Identity(start=1),
+        primary_key=True
+    )
+    sensor_id: Mapped[int] = Column(
+        'sensor_id',
+        ForeignKey(Sensor.sensor_id),
+        unique=True
+    )
+    time_created: Mapped[datetime] = Column(
+        'time_created',
+        DateTime(timezone=True),
+        server_default=func.now()
+    )
+    time_updated: Mapped[datetime] = Column(
+        'time_updated',
+        DateTime(timezone=True),
+        onupdate=func.now()
+    )
+    last_value: Mapped[dict] = Column(
+        'last_value',
+        JSON(none_as_null=True)
+    )
+    last_timestamp: Mapped[datetime] = Column(
+        'last_timestamp',
+        DateTime
     )
 
 
@@ -95,12 +130,16 @@ class Unit(ReadableMixin, GenesisBase):
     unit_alias = Column(String, unique=True)
     is_active = Column(Boolean)
     is_warehouse_level_unit = Column(Boolean, default=False)
-    from_date = Column(DateTime, nullable=False, default=datetime.utcnow)
-    to_date = Column(DateTime)
-    created_by = Column(String, nullable=False, default='Admin')
-    created_ts = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_by = Column(String)
-    updated_ts = Column(DateTime)
+    time_created: Mapped[datetime] = Column(
+        'time_created',
+        DateTime(timezone=True),
+        server_default=func.now()
+    )
+    time_updated: Mapped[datetime] = Column(
+        'time_updated',
+        DateTime(timezone=True),
+        onupdate=func.now()
+    )
 
 
 class UnitSensorMap(ReadableMixin, GenesisBase):
