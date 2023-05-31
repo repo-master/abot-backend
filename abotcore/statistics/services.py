@@ -1,11 +1,13 @@
 
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, List, Optional, Set
 
 import pandas as pd
-from fastapi import Response
 
 from .schemas import (AggregationIn, AggregationMethod, AggregationOut, DataIn,
                       OutliersIn)
+
+PERCENTILE_25 = 0.25
+PERCENTILE_75 = 0.75
 
 
 class DataStatisticsService:
@@ -41,24 +43,24 @@ class DataStatisticsService:
         # Yes it's that simple.
         return data.count()
 
-    def data_agg_compliance(data: pd.Series, **kwargs) -> float:
-        # Get outliers (for now) with all data present
-        df_outliers = DataStatisticsService.data_get_outliers(data, False)
-        # Combine outler states
-        df_outliers['is_outlier'] = pd.Series(
-            (df_outliers['is_extreme_low'] | df_outliers['is_extreme_high']), dtype=bool)
-        # Calculate mean, and subtract it from 1.0 to get compliance.
-        # The mean will lie between 0 and 1 (inclusive) as they are boolean values
-        compliance = round(1.0 - df_outliers['is_outlier'].mean(), 3)
-        return compliance
+    def data_agg_compliance(data: pd.Series, lower_target: Optional[float] = None, upper_target: Optional[float] = None, **kwargs) -> float:
+        if data.count() == 0:
+            return 0.0
+        if lower_target is None:
+            lower_target = data.min()
+        if upper_target is None:
+            upper_target = data.max()
 
-    def data_agg_quantile(data: pd.Series, **kwargs) -> float:
-        return data.quantile(float(kwargs.get('quantile_size', 0.5))).astype(float)
+        return round(
+            data.between(lower_target, upper_target).sum() / data.count(), 3)
+
+    def data_agg_quantile(data: pd.Series, quantile_size: float = 0.5, **kwargs) -> float:
+        return data.quantile(quantile_size).astype(float)
 
     def data_get_outliers(data: pd.Series, only_outliers: bool = True, **kwargs) -> pd.DataFrame:
         # Calculate the IQR of the value column
-        Q1 = data.quantile(0.25)
-        Q3 = data.quantile(0.75)
+        Q1 = data.quantile(PERCENTILE_25)
+        Q3 = data.quantile(PERCENTILE_75)
 
         IQR = Q3 - Q1
 
