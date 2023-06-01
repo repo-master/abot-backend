@@ -8,3 +8,4 @@ httpx~=0.24.0
 pandas~=2.0.1
 matplotlib~=3.7.1
 plotly~=5.14.1
+xhtml2pdf~=0.2.11
