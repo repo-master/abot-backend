@@ -1,11 +1,13 @@
 '''Implements services for the fake Genesis service'''
 
+from xhtml2pdf import pisa
 import base64
+import os
 import io
 import json
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, Optional, Tuple, Callable
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
@@ -25,6 +27,10 @@ from .schemas import (PlotlyFigure, SensorValue, SensorDataOut, SensorMetadataBa
                       SensorMetadataOut, UnitMetadata, SensorStateOut, SensorHealthOut)
 
 
+def TIME_LOCAL_NOW(): return datetime.now()
+def TIME_LOCAL_PAST_24H(): return (datetime.now() - timedelta(hours=24))
+
+
 class JSONEncodeData(json.JSONEncoder):
     def default(self, o: Any) -> Any:
         if isinstance(o, np.ndarray):
@@ -32,6 +38,21 @@ class JSONEncodeData(json.JSONEncoder):
         if isinstance(o, datetime):
             return o.isoformat()
         return super().default(o)
+
+
+def time_range_parameters(default_from_func: Callable[[], datetime] = TIME_LOCAL_PAST_24H,
+                          default_to_func: Callable[[], datetime] = TIME_LOCAL_NOW):
+    async def _wrapped_time_range_params(
+            timestamp_from: Optional[datetime] = None,
+            timestamp_to: Optional[datetime] = None) -> Tuple[datetime, datetime]:
+        # Default date range - today all day
+        if timestamp_from is None:
+            timestamp_from = default_from_func()
+        if timestamp_to is None:
+            timestamp_to = default_to_func()
+        return timestamp_from, timestamp_to
+
+    return _wrapped_time_range_params
 
 
 class SensorDataService:
@@ -87,15 +108,9 @@ class SensorDataService:
 
     async def get_sensor_data(self,
                               sensor_id: int,
-                              timestamp_from: Optional[datetime] = None,
-                              timestamp_to: Optional[datetime] = None) -> List[SensorDataOut]:
+                              timestamp_from: datetime,
+                              timestamp_to: datetime) -> List[SensorDataOut]:
         session: Session = self.async_session
-
-        # Default date range - today all day
-        if timestamp_from is None:
-            timestamp_from = datetime.now() - timedelta(hours=24)
-        if timestamp_to is None:
-            timestamp_to = datetime.now()
 
         # Database has timestamp stored as timezone-naive format [timestamp without timezone] in UTC, so:
         # - Convert the given timestamp to UTC from whatever TZ it was
@@ -236,10 +251,10 @@ class GraphPlotService:
                 self.plot_graph(img_file, df, x_axis='timestamp', y_axis='value', x_label="Timestamp",
                                 y_label=f"{sensor_metadata.sensor_type} in {sensor_metadata.display_unit}", title=sensor_metadata.sensor_name)
                 img_file.seek(0)
+                yield img_file
             else:
                 # No data, so there is nothing to plot. Return None
                 yield
-            yield img_file
         finally:
             img_file.close()
 
@@ -370,24 +385,56 @@ class InteractiveGraphService:
             fig.add_trace(pgo.Scatter(x=outliers[x_axis], y=outliers[y_axis],
                                       mode='markers', name='outlier'))
 
+        thresh_default_lower, thresh_default_upper = DataStatisticsService.get_quantile_threshold(
+            df.set_index(x_axis)[
+            y_axis]
+        )
+
         if lower_threshold is None:
-            if not outliers.empty:
-                threshold_array = np.full(len(df[x_axis]), outliers['lower_threshold'][0])
-                fig.add_trace(pgo.Scatter(x=df[x_axis], y=threshold_array, line=dict(
-                    color="pink",
-                    width=1,
-                    dash="dashdot"
-                ),
-                    name="Lower threshold"))
+            lower_threshold = thresh_default_lower
+
+        threshold_array_lower = np.full(len(df[x_axis]), lower_threshold)
+        fig.add_trace(pgo.Scatter(x=df[x_axis], y=threshold_array_lower, line=dict(
+            color="pink",
+            width=1,
+            dash="dashdot"
+        ), name="Lower threshold"))
 
         if higher_threshold is None:
-            if not outliers.empty:
-                threshold_array = np.full(len(df[x_axis]), outliers['higher_threshold'][0])
-                fig.add_trace(pgo.Scatter(x=df[x_axis], y=threshold_array, line=dict(
-                    color="blue",
-                    width=1,
-                    dash="dashdot"
-                ),
-                    name="Upper threshold"))
+            higher_threshold = thresh_default_upper
+
+        threshold_array_upper = np.full(len(df[x_axis]), higher_threshold)
+        fig.add_trace(pgo.Scatter(x=df[x_axis], y=threshold_array_upper, line=dict(
+            color="blue",
+            width=1,
+            dash="dashdot"
+        ),
+            name="Upper threshold"))
 
         return fig
+
+
+class GraphConvertService:
+    def _convert_pdf(fig: pgo.Figure, dest_file):
+        pisa.CreatePDF(fig.to_html(), dest=dest_file)
+
+    CONVERTERS = {
+        'pdf': _convert_pdf
+    }
+
+    @asynccontextmanager
+    async def convert(self, fig: pgo.Figure, format: str = 'pdf', filename: Optional[str] = None, auto_close: bool = True):
+        io_file = io.BytesIO()
+        cvt = self.CONVERTERS.get(format)
+        try:
+            if cvt:
+                cvt(fig, io_file)
+                if filename:
+                    io_file.name = os.path.extsep.join([filename, format])
+                io_file.seek(0)
+                yield io_file
+            else:
+                yield # No content, so yield None
+        finally:
+            if auto_close:
+                io_file.close()

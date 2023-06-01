@@ -1,5 +1,5 @@
 
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any, Callable, Dict, List, Optional, Tuple, Set
 
 import pandas as pd
 
@@ -57,18 +57,22 @@ class DataStatisticsService:
     def data_agg_quantile(data: pd.Series, quantile_size: float = 0.5, **kwargs) -> float:
         return data.quantile(quantile_size).astype(float)
 
-    def data_get_outliers(data: pd.Series, only_outliers: bool = True, **kwargs) -> pd.DataFrame:
-        # Calculate the IQR of the value column
+    def get_quantile_threshold(data: pd.Series) -> Tuple[float, float]:
+        # Calculate the IQR of the column
+
         Q1 = data.quantile(PERCENTILE_25)
         Q3 = data.quantile(PERCENTILE_75)
 
         IQR = Q3 - Q1
 
-        # Define the outlier threshold
-        threshold = (
+        # Define the threshold points
+        return (
             Q1 - 1.5 * IQR,     # Lower limit
             Q3 + 1.5 * IQR      # Upper limit
         )
+
+    def data_get_outliers(data: pd.Series, only_outliers: bool = True, **kwargs) -> pd.DataFrame:
+        threshold = DataStatisticsService.get_quantile_threshold(data)
 
         # Identify the outliers, mark them accordingly
         outliers = data.to_frame()

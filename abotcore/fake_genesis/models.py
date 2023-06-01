@@ -194,8 +194,8 @@ class UnitSensorMap(ReadableMixin, GenesisBase):
         ForeignKey(Sensor.sensor_id)
     )
 
-    unit: Mapped["Unit"] = relationship("Unit")
-    sensor: Mapped["Sensor"] = relationship("Sensor")
+    unit: Mapped[Unit] = relationship(Unit)
+    sensor: Mapped[Sensor] = relationship(Sensor)
 
 
 # register_post_relation_handlers(GenesisBase)
