@@ -127,7 +127,7 @@ async def plot_download_pdf(
         figure_conv_service: GraphConvertService = Depends(GraphConvertService)):
     sensor_metadata = await sensor_data.get_sensor_metadata(sensor_id)
     sensor_point_data = await sensor_data.get_sensor_data(sensor_id, *timerange)
-    filename_gen = "Report Sensor %s" % sensor_metadata['sensor_name']
+    filename_gen = "Report Sensor %s" % sensor_metadata.sensor_name
     fig = await ig_service.figure_from_sensor_data(sensor_metadata, sensor_point_data)
     async with figure_conv_service.convert(fig,
                                            format=format,
