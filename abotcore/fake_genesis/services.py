@@ -415,22 +415,26 @@ class InteractiveGraphService:
 
 
 class GraphConvertService:
-    def _convert_pdf(fig: pgo.Figure, dest_file):
-        pisa.CreatePDF(fig.to_html(), dest=dest_file)
+    def _convert_img(fig: pgo.Figure):
+        pass
+
+    def _convert_pdf(dest_file, *fig: pgo.Figure):
+        dest_file.write(fig[0].to_image(format='pdf', engine="kaleido"))
+        #pisa.CreatePDF(src, dest=dest_file)
 
     CONVERTERS = {
         'pdf': _convert_pdf
     }
 
     @asynccontextmanager
-    async def convert(self, fig: pgo.Figure, format: str = 'pdf', filename: Optional[str] = None, auto_close: bool = True):
+    async def convert(self, *fig: pgo.Figure, format: str = 'pdf', filename: Optional[str] = None, auto_close: bool = True):
         io_file = io.BytesIO()
         cvt = self.CONVERTERS.get(format)
         try:
             if cvt:
-                cvt(fig, io_file)
                 if filename:
                     io_file.name = os.path.extsep.join([filename, format])
+                cvt(io_file, *fig)
                 io_file.seek(0)
                 yield io_file
             else:
