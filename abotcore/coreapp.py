@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 # Routers
-from abotcore import chat, fake_genesis, statistics
+from abotcore import chat, statistics, fulfillment
 from abotcore.config import Settings
 
 
@@ -36,7 +36,7 @@ def create_app() -> FastAPI:
     @app.on_event("startup")
     async def init_tables():
         import asyncio
-        from abotcore.db import Base, Connection, get_engine, get_schema_mapping
+        from abotcore.db import Base, Connection, get_engine, get_sessionmaker, get_schema_mapping
         from sqlalchemy.schema import CreateSchema
         from multiprocessing import Lock
 
@@ -54,10 +54,7 @@ def create_app() -> FastAPI:
                     conn.execute(
                         CreateSchema(schema_mapping.get(schema_name, schema_name), if_not_exists=True)
                     )
-                    # TODO: Auto-get this list from SQLAlchemy somehow...
-                    for schema_name in [
-                        'genesis'
-                    ]
+                    for schema_name in Base.metadata._schemas
                 ])
                 logger.info("Creating/updating tables (if needed)...")
                 await conn.run_sync(Base.metadata.create_all)
@@ -78,9 +75,7 @@ def create_app() -> FastAPI:
 
     ##### PUBLIC #####
     app.include_router(chat.router)
-    app.include_router(fake_genesis.router)
 
-    ##### PRIVATE #####
     app.include_router(statistics.router)
 
     return app
