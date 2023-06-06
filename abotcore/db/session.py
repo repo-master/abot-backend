@@ -11,14 +11,11 @@ LOG = logging.getLogger(__name__)
 
 async def get_session() -> AsyncIterator[Session]:
     '''Returns sessionmaker when it is available'''
-    db: Session = None
+    db: Session
 
     try:
         sessionmaker = get_sessionmaker()
-        db = sessionmaker()
-        yield db
+        async with sessionmaker() as db:
+            yield db
     except SQLAlchemyError:
         LOG.exception("Failed to create SQLaAlchemy session:")
-    finally:
-        if db:
-            await db.close()
