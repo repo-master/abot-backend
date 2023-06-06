@@ -5,6 +5,7 @@ from abotcore import create_app
 
 import unittest
 
+
 class TestStatisticsAggregation(unittest.TestCase):
     client = TestClient(create_app())
     ENDPOINT = "/statistics/aggregation"
