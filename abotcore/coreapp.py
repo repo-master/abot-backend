@@ -59,6 +59,11 @@ def create_app() -> FastAPI:
                 logger.info("Creating/updating tables (if needed)...")
                 await conn.run_sync(Base.metadata.create_all)
 
+            sessionmaker = get_sessionmaker()
+            async with sessionmaker() as db:
+                await fulfillment.FulfillmentSync(db).sync_all(True)
+
+
     ### Exception handlers ###
 
     @app.exception_handler(OSError)
@@ -77,5 +82,7 @@ def create_app() -> FastAPI:
     app.include_router(chat.router)
 
     app.include_router(statistics.router)
+
+    app.include_router(fulfillment.router)
 
     return app
