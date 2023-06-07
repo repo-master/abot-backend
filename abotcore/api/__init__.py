@@ -1,2 +1,2 @@
 
-from .client import RasaRestClient, RasaActionsClient
+from .client import AsyncClient, RasaRestClient, RasaActionsClient

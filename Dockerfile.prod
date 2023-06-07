@@ -10,7 +10,7 @@ ENV WEB_CONCURRENCY=2
 
 # Copy requirements file and install
 COPY ./requirements.txt ./requirements.txt
-RUN pip install -r requirements.txt
+RUN pip install -q -r requirements.txt
 
 # Copy all app files to /app folder
 COPY . /app
