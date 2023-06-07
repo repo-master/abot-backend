@@ -23,3 +23,9 @@ class DBSettings(BaseSettings):
     class Config:
         '''Yo dawg, I heard you like configs, so I put a config in your config'''
         env_file = ".env"
+
+class GenesisDBSettings(BaseSettings):
+    genesis_db_uri:  AnyUrl 
+
+    class Config:
+        env_file = ".env"
