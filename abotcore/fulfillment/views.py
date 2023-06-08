@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, Request
 
 from .services import FulfillmentSync
 
-# Main endpoint router for fake Genesis
+# Main endpoint router for fulfillment endpoints
 router = APIRouter(prefix='/fulfillment')
 
 

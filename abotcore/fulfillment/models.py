@@ -1,4 +1,4 @@
-'''DB models for use as Genesis'''
+'''DB models for use in Abot schemas'''
 
 from datetime import datetime
 from typing import Dict, List

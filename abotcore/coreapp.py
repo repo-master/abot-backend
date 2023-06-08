@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 # Routers
-from abotcore import chat, statistics, fulfillment ,genesis
+from abotcore import chat, statistics, fulfillment
 from abotcore.config import Settings
 
 
@@ -80,8 +80,6 @@ def create_app() -> FastAPI:
 
     ##### PUBLIC #####
     app.include_router(chat.router)
-
-    app.include_router(genesis.router)
 
     ##### PRIVATE #####
     app.include_router(statistics.router)
