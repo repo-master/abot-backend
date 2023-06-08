@@ -21,5 +21,4 @@ class DBSettings(BaseSettings):
     db_schema_map: Optional[List[str]] = None
 
     class Config:
-        '''Yo dawg, I heard you like configs, so I put a config in your config'''
         env_file = ".env"
