@@ -38,7 +38,11 @@ class FulfillmentSync:
 
         async with AsyncClient(timeout=30) as client:
             req = client.build_request(
-                request.method, fulfillment_url, headers=request.headers.raw, content=request.stream()
+                request.method,
+                fulfillment_url,
+                headers=request.headers.raw,
+                params=request.query_params,
+                content=request.stream()
             )
 
             logger.debug("Sending fulfillment request to %s using %s method",
