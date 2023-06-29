@@ -10,9 +10,17 @@ class Settings(BaseSettings):
     cors_origins: List[str] = ['*']
     app_log_level: Union[int, str] = logging.INFO
 
+    class Config:
+        env_file = ".env"
+
+
 class EndpointSettings(BaseSettings):
     rasa_rest_endpoint_base: AnyUrl = "http://localhost:5005"
     actions_endpoint_base: AnyUrl = "http://localhost:5055"
+    langcorn_endpoint_base: AnyUrl = "http://localhost:7860"
+
+    class Config:
+        env_file = ".env"
 
 
 class DBSettings(BaseSettings):

@@ -2,22 +2,41 @@
 import httpx
 from fastapi import HTTPException
 
-from abotcore.api import RasaRestClient
+from abotcore.api import RasaRestClient, LangcornRestClient
 
 from .schemas import (
+    # Base
     ChatMessageIn,
     ChatMessageOut,
+    ChatStatusOut,
+    RestEndpointStatus,
+
+    # Rasa
     RasaStatusOut,
-    RasaRestStatus
+    RasaRestStatus,
+
+    # Langcorn
+    LangchainRestStatus,
+    LangcornServerStatus,
+    LangcornStatusOut,
+    LangResponse
 )
 
-from typing import List, Dict
+from uuid import uuid4 as uuidv4
+from typing import List, Dict, Type
 
 
-class ChatMessageService:
-    def __init__(self) -> None:
-        pass
+class ChatServer:
+    async def send_chat_message(self, chat_message: ChatMessageIn) -> List[ChatMessageOut]:
+        return []
 
+    async def get_status(self) -> ChatStatusOut:
+        return {
+            "status": RestEndpointStatus.UNREACHABLE
+        }
+
+
+class RasaChatServer(ChatServer):
     async def send_chat_message(self, chat_message: ChatMessageIn) -> List[ChatMessageOut]:
         async with RasaRestClient() as client:
             try:
@@ -41,3 +60,58 @@ class ChatMessageService:
                 return RasaStatusOut(**response.json())
             except (httpx.ConnectError, httpx.ReadTimeout):
                 return RasaStatusOut(status=RasaRestStatus.UNREACHABLE)
+
+
+class LangcornChatServer(ChatServer):
+    CHAIN_NAME = 'genesis.chat_chain'
+    INPUT_VAR = 'input'
+
+    async def send_chat_message(self, chat_message: ChatMessageIn) -> List[ChatMessageOut]:
+        async with LangcornRestClient() as client:
+            try:
+                if chat_message.sender_id is None:
+                    chat_message.sender_id = uuidv4().hex
+                lcorn_message = {
+                    self.INPUT_VAR: chat_message.text,
+                    "memory": [
+                        {}
+                    ]
+                }
+                response = await client.post("/%s/run" % self.CHAIN_NAME, json=lcorn_message)
+                response_message: LangResponse = response.json()
+                return self._map_response_to_message(response_message, chat_message.sender_id)
+            except httpx.ConnectError:
+                raise HTTPException(500, detail="Failed to connect to the Langcorn REST service")
+            except httpx.ReadTimeout:
+                raise HTTPException(500, detail="Langcorn REST service took too long to respond")
+
+    def _map_response_to_message(self, msg: LangResponse, sender_id: str) -> List[ChatMessageOut]:
+        # Langcorn just returns a single message
+        # TODO: Maybe split text every paragraph (and keep all assets for first message, buttons for last)
+        return [
+            ChatMessageOut(
+                recipient_id=sender_id,
+                text=msg['output']
+            )
+        ]
+
+    async def get_status(self) -> LangcornStatusOut:
+        '''Get Langcorn server health'''
+        async with LangcornRestClient() as client:
+            try:
+                response = await client.get("/ht")
+                endpoints_status: LangcornServerStatus = response.json()
+                endpoint_available_functions = [x.split(':')[0] for x in endpoints_status.get('functions', [])]
+                if self.CHAIN_NAME in endpoint_available_functions:
+                    return LangcornStatusOut(status=LangchainRestStatus.OK)
+                return LangcornStatusOut(status=LangchainRestStatus.UNREACHABLE)
+            except (httpx.ConnectError, httpx.ReadTimeout):
+                return LangcornStatusOut(status=LangchainRestStatus.UNREACHABLE)
+
+
+def make_chat_service_class(handler_base: Type[ChatServer] = ChatServer):
+    class ChatMessageService(handler_base):
+        def __init__(self) -> None:
+            pass
+
+    return ChatMessageService

@@ -29,10 +29,45 @@ class ChatMessageOut(ChatMessage):
     custom: Optional[Dict[str, Any]] = None
 
 
-class RasaRestStatus(Enum):
+class RestEndpointStatus(Enum):
     OK = 'ok'
     UNREACHABLE = 'unreachable'
 
 
-class RasaStatusOut(BaseModel):
+RasaRestStatus = RestEndpointStatus
+LangchainRestStatus = RestEndpointStatus
+
+
+class ChatStatusOut(BaseModel):
+    status: RestEndpointStatus
+
+
+class RasaStatusOut(ChatStatusOut):
     status: Union[RasaRestStatus, str]
+
+
+class LangcornServerStatus(BaseModel):
+    functions: List[str]
+
+
+class LangcornStatusOut(ChatStatusOut):
+    status: RestEndpointStatus
+
+
+# Taken from Langcorn package.
+# TODO: import as dependency (in services.py) and use
+
+class MemoryData(BaseModel):
+    content: str
+    additional_kwargs: dict[str, Any]
+
+
+class Memory(BaseModel):
+    type: str
+    data: MemoryData
+
+
+class LangResponse(BaseModel):
+    output: str
+    error: str
+    memory: list[Memory]

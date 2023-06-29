@@ -59,9 +59,9 @@ def create_app() -> FastAPI:
                 logger.info("Creating/updating tables (if needed)...")
                 await conn.run_sync(Base.metadata.create_all)
 
-            sessionmaker = get_sessionmaker()
-            async with sessionmaker() as db:
-                await fulfillment.FulfillmentSync(db).sync_all(True)
+            # sessionmaker = get_sessionmaker()
+            # async with sessionmaker() as db:
+            #     await fulfillment.FulfillmentSync(db).sync_all(True)
 
 
     ### Exception handlers ###
