@@ -11,7 +11,7 @@ def RasaRestClient(**kwargs) -> AsyncClient:
 
 def LangcornRestClient(**kwargs) -> AsyncClient:
     settings = get_endpoint_settings()
-    return AsyncClient(base_url=settings.langcorn_endpoint_base, timeout=30, **kwargs)
+    return AsyncClient(base_url=settings.langcorn_endpoint_base, timeout=90, **kwargs)
 
 
 def RasaActionsClient(**kwargs) -> AsyncClient:
