@@ -8,14 +8,7 @@ from sqlalchemy import (JSON, Boolean, Column, DateTime, Float, ForeignKey,
 from sqlalchemy.orm import Mapped, relationship
 from sqlalchemy.sql import func
 
-from ..db import Base
-
-
-# Abstract Base model
-
-class AbotBase(Base):
-    __abstract__ = True
-    __table_args__ = {'schema': 'abot'}
+from ..db.common_schemas import AbotBase
 
 
 class Fulfillment(AbotBase):

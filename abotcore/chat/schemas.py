@@ -4,12 +4,11 @@ from pydantic import BaseModel, Extra
 from typing import Optional, Union, Dict, List, Any
 from enum import Enum
 
+# Base
 
-class ChatMessage(BaseModel):
+
+class ChatMessage(BaseModel, extra=Extra.forbid):
     text: str
-
-    class Config:
-        extra = Extra.forbid
 
 
 class ChatMessageIn(ChatMessage):
@@ -34,16 +33,27 @@ class RestEndpointStatus(Enum):
     UNREACHABLE = 'unreachable'
 
 
-RasaRestStatus = RestEndpointStatus
-LangchainRestStatus = RestEndpointStatus
+class ChatRole(Enum):
+    HUMAN = 'human',
+    AI = 'ai'
 
 
 class ChatStatusOut(BaseModel):
     status: RestEndpointStatus
 
 
+# Rasa
+
+RasaRestStatus = RestEndpointStatus
+
+
 class RasaStatusOut(ChatStatusOut):
     status: Union[RasaRestStatus, str]
+
+
+# Langcorn
+
+LangcornRestStatus = RestEndpointStatus
 
 
 class LangcornServerStatus(BaseModel):
@@ -65,6 +75,11 @@ class MemoryData(BaseModel):
 class Memory(BaseModel):
     type: str
     data: MemoryData
+
+
+class LangRequest(BaseModel, extra=Extra.allow):
+    # Additional fields for input keys
+    memory: List[Memory]
 
 
 class LangResponse(BaseModel):
