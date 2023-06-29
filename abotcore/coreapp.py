@@ -7,13 +7,13 @@ from fastapi.responses import JSONResponse
 
 # Routers
 from abotcore import chat, statistics, fulfillment
-from abotcore.config import Settings
+from abotcore.config import ServerSettings
 
 
 def create_app() -> FastAPI:
     ### Application instance ###
     app = FastAPI()
-    settings = Settings()
+    settings = ServerSettings()
 
     logging.basicConfig(
         level=settings.app_log_level
