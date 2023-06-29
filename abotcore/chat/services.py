@@ -1,29 +1,19 @@
 
+from uuid import uuid4 as uuidv4
+from typing import Dict, List, Type
+import logging
+
 import httpx
 from fastapi import HTTPException
 
-from abotcore.api import RasaRestClient, LangcornRestClient
+from abotcore.api import LangcornRestClient, RasaRestClient
 
-from .schemas import (
-    # Base
-    ChatMessageIn,
-    ChatMessageOut,
-    ChatStatusOut,
-    RestEndpointStatus,
+from .schemas import (ChatMessageIn, ChatMessageOut,
+                      ChatStatusOut, LangchainRestStatus, LangcornServerStatus,
+                      LangcornStatusOut, LangResponse, RasaRestStatus,
+                      RasaStatusOut, RestEndpointStatus)
 
-    # Rasa
-    RasaStatusOut,
-    RasaRestStatus,
-
-    # Langcorn
-    LangchainRestStatus,
-    LangcornServerStatus,
-    LangcornStatusOut,
-    LangResponse
-)
-
-from uuid import uuid4 as uuidv4
-from typing import List, Dict, Type
+LOGGER = logging.getLogger(__name__)
 
 
 class ChatServer:
@@ -104,8 +94,11 @@ class LangcornChatServer(ChatServer):
                 endpoint_available_functions = [x.split(':')[0] for x in endpoints_status.get('functions', [])]
                 if self.CHAIN_NAME in endpoint_available_functions:
                     return LangcornStatusOut(status=LangchainRestStatus.OK)
+                LOGGER.warning("Langcorn model endpoint '%s' was unavailable. Available ones: [%s]" % ', '.join(
+                    endpoint_available_functions))
                 return LangcornStatusOut(status=LangchainRestStatus.UNREACHABLE)
-            except (httpx.ConnectError, httpx.ReadTimeout):
+            except (httpx.ConnectError, httpx.ReadTimeout) as e:
+                LOGGER.warning("Langcorn chat endpoint was unreachable when requested:", exc_info=e)
                 return LangcornStatusOut(status=LangchainRestStatus.UNREACHABLE)
 
 
