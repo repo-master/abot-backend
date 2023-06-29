@@ -4,13 +4,19 @@ from fastapi import APIRouter, Depends
 from .schemas import (
     ChatMessageIn,
     ChatMessageOut,
-    RasaStatusOut
+    ChatStatusOut
 )
 from .services import (
-    ChatMessageService
+    make_chat_service_class,
+    RasaChatServer,
+    LangcornChatServer
 )
 
 from typing import List
+
+
+LangcornChatService = make_chat_service_class(LangcornChatServer)
+RASAChatService = make_chat_service_class(RasaChatServer)
 
 
 # Endpoint router
@@ -19,8 +25,8 @@ router = APIRouter(prefix='/chat')
 
 # Default route (/chat)
 @router.post("", response_model_exclude_unset=True)
-async def chat(msg: ChatMessageIn, chat_service: ChatMessageService = Depends(ChatMessageService)) -> List[ChatMessageOut]:
-    '''Get the Rasa model's response to the user's message'''
+async def chat(msg: ChatMessageIn, chat_service: RASAChatService = Depends(RASAChatService)) -> List[ChatMessageOut]:
+    '''Get the chat model's response to the user's message'''
 
     # Generate responses from the Rasa Agent, wait for all replies and send back as JSON.
     # sender_id is optional in this case.
@@ -31,6 +37,6 @@ async def chat(msg: ChatMessageIn, chat_service: ChatMessageService = Depends(Ch
 
 
 @router.get("/status")
-async def status(chat_service: ChatMessageService = Depends(ChatMessageService)) -> RasaStatusOut:
+async def status(chat_service: RASAChatService = Depends(RASAChatService)) -> ChatStatusOut:
     '''Heartbeat and status enquiry'''
     return await chat_service.get_status()
