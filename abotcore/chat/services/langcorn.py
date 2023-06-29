@@ -1,55 +1,21 @@
 
 from uuid import uuid4 as uuidv4
-from typing import Dict, List, Type
+from typing import List
 import logging
 
 import httpx
 from fastapi import HTTPException
 
-from abotcore.api import LangcornRestClient, RasaRestClient
+from abotcore.api import LangcornRestClient
 
-from .schemas import (ChatMessageIn, ChatMessageOut,
-                      ChatStatusOut, LangchainRestStatus, LangcornServerStatus,
-                      LangcornStatusOut, LangResponse, RasaRestStatus,
-                      RasaStatusOut, RestEndpointStatus)
+from ..schemas import (ChatMessageIn, ChatMessageOut,
+                      LangchainRestStatus, LangcornServerStatus,
+                      LangcornStatusOut, LangResponse)
+
+from .base import ChatServer
+
 
 LOGGER = logging.getLogger(__name__)
-
-
-class ChatServer:
-    async def send_chat_message(self, chat_message: ChatMessageIn) -> List[ChatMessageOut]:
-        return []
-
-    async def get_status(self) -> ChatStatusOut:
-        return {
-            "status": RestEndpointStatus.UNREACHABLE
-        }
-
-
-class RasaChatServer(ChatServer):
-    async def send_chat_message(self, chat_message: ChatMessageIn) -> List[ChatMessageOut]:
-        async with RasaRestClient() as client:
-            try:
-                # Format that Rasa's REST channel uses is slightly different
-                rasa_message = {
-                    "message": chat_message.text,
-                    "sender": chat_message.sender_id
-                }
-                response = await client.post("/webhooks/rest/webhook", json=rasa_message)
-                response_messages: List[Dict] = response.json()
-                return [ChatMessageOut(**msg) for msg in response_messages]
-            except httpx.ConnectError:
-                raise HTTPException(500, detail="Failed to connect to Rasa REST service")
-            except httpx.ReadTimeout:
-                raise HTTPException(500, detail="Rasa REST service took too long to respond")
-
-    async def get_status(self) -> RasaStatusOut:
-        async with RasaRestClient() as client:
-            try:
-                response = await client.get("/webhooks/rest")
-                return RasaStatusOut(**response.json())
-            except (httpx.ConnectError, httpx.ReadTimeout):
-                return RasaStatusOut(status=RasaRestStatus.UNREACHABLE)
 
 
 class LangcornChatServer(ChatServer):
@@ -74,6 +40,9 @@ class LangcornChatServer(ChatServer):
                 raise HTTPException(500, detail="Failed to connect to the Langcorn REST service")
             except httpx.ReadTimeout:
                 raise HTTPException(500, detail="Langcorn REST service took too long to respond")
+            except Exception as e:
+                LOGGER.exception("Failed to respond to the chat message by [%s] \"%s\" due to an exception:", chat_message.sender_id, chat_message.text)
+                raise HTTPException(500, detail="Failed to generate response: %s" % str(e))
 
     def _map_response_to_message(self, msg: LangResponse, sender_id: str) -> List[ChatMessageOut]:
         # Langcorn just returns a single message
@@ -100,11 +69,3 @@ class LangcornChatServer(ChatServer):
             except (httpx.ConnectError, httpx.ReadTimeout) as e:
                 LOGGER.warning("Langcorn chat endpoint was unreachable when requested:", exc_info=e)
                 return LangcornStatusOut(status=LangchainRestStatus.UNREACHABLE)
-
-
-def make_chat_service_class(handler_base: Type[ChatServer] = ChatServer):
-    class ChatMessageService(handler_base):
-        def __init__(self) -> None:
-            pass
-
-    return ChatMessageService
