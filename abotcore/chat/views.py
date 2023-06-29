@@ -19,13 +19,16 @@ LangcornChatService = make_chat_service_class(LangcornChatServer)
 RASAChatService = make_chat_service_class(RasaChatServer)
 
 
+EnabledChatService = LangcornChatService
+
+
 # Endpoint router
 router = APIRouter(prefix='/chat')
 
 
 # Default route (/chat)
 @router.post("", response_model_exclude_unset=True)
-async def chat(msg: ChatMessageIn, chat_service: RASAChatService = Depends(RASAChatService)) -> List[ChatMessageOut]:
+async def chat(msg: ChatMessageIn, chat_service: EnabledChatService = Depends(EnabledChatService)) -> List[ChatMessageOut]:
     '''Get the chat model's response to the user's message'''
 
     # Generate responses from the Rasa Agent, wait for all replies and send back as JSON.
@@ -37,6 +40,6 @@ async def chat(msg: ChatMessageIn, chat_service: RASAChatService = Depends(RASAC
 
 
 @router.get("/status")
-async def status(chat_service: RASAChatService = Depends(RASAChatService)) -> ChatStatusOut:
+async def status(chat_service: EnabledChatService = Depends(EnabledChatService)) -> ChatStatusOut:
     '''Heartbeat and status enquiry'''
     return await chat_service.get_status()
