@@ -43,6 +43,7 @@ class LangcornChatServer(ChatServer):
                     "memory": memory
                 })
                 response = await client.post("/%s/run" % self.CHAIN_NAME, json=lcorn_message.dict())
+                response.raise_for_status()
                 resp_data = response.json()
                 response_message: LangResponse = LangResponse.parse_obj(resp_data)
                 await self._insert_chat_history_ai(response_message, chat_message)
@@ -52,6 +53,9 @@ class LangcornChatServer(ChatServer):
                 raise HTTPException(500, detail="Failed to connect to the Langcorn REST service")
             except httpx.ReadTimeout:
                 raise HTTPException(500, detail="Langcorn REST service took too long to respond")
+            except httpx.HTTPStatusError as e:
+                LOGGER.warning("Failed to respond to the chat message by [%s] \"%s\" due to an exception in Langcorn:", chat_message.sender_id, chat_message.text, exc_info=e)
+                raise HTTPException(500, detail="Failed to generate response: %s" % str(e))
             except Exception as e:
                 LOGGER.exception("Failed to respond to the chat message by [%s] \"%s\" due to an exception:", chat_message.sender_id, chat_message.text)
                 raise HTTPException(500, detail="Failed to generate response: %s" % str(e))
