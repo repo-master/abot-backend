@@ -55,6 +55,7 @@ class LangcornChatServer(ChatServer):
                 raise HTTPException(500, detail="Langcorn REST service took too long to respond")
             except httpx.HTTPStatusError as e:
                 LOGGER.warning("Failed to respond to the chat message by [%s] \"%s\" due to an exception in Langcorn:", chat_message.sender_id, chat_message.text, exc_info=e)
+                LOGGER.info("Content received (for above exception):\n%s", e.request.content.decode(errors='replace'))
                 raise HTTPException(500, detail="Failed to generate response: %s" % str(e))
             except Exception as e:
                 LOGGER.exception("Failed to respond to the chat message by [%s] \"%s\" due to an exception:", chat_message.sender_id, chat_message.text)
