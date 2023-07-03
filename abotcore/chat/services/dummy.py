@@ -28,6 +28,12 @@ class DummyChatServer(ChatServer):
                 text="Test message response.\nMarkdown working? *Yes*.\n[Link test](http://www.google.com).\n\n__Special text__"
             )]
 
+        elif 'hello' in chat_message.text:
+            return [ChatMessageOut(
+                recipient_id=chat_message.sender_id,
+                text="Hi! How may I help?"
+            )]
+
         elif 'ping' in chat_message.text:
             return [ChatMessageOut(
                 recipient_id=chat_message.sender_id,
