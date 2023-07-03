@@ -1,17 +1,27 @@
 
 import logging
-from typing import Dict, List, Type
-from uuid import uuid4 as uuidv4
+from typing import Dict, List, Union
 
 import httpx
 from fastapi import HTTPException
 
 from abotcore.api import RasaRestClient
 
-from ..schemas import (ChatMessageIn, ChatMessageOut, RasaRestStatus,
-                       RasaStatusOut)
+from ..schemas import (ChatMessageIn, ChatMessageOut, ChatStatusOut,
+                       RestEndpointStatus)
 from .base import ChatServer
 
+
+# Schemas
+
+RasaRestStatus = RestEndpointStatus
+
+
+class RasaStatusOut(ChatStatusOut):
+    status: Union[RasaRestStatus, str]
+
+
+# Chat server with Rasa REST API
 
 class RasaChatServer(ChatServer):
     async def send_chat_message(self, chat_message: ChatMessageIn) -> List[ChatMessageOut]:
@@ -37,4 +47,3 @@ class RasaChatServer(ChatServer):
                 return RasaStatusOut(**response.json())
             except (httpx.ConnectError, httpx.ReadTimeout):
                 return RasaStatusOut(status=RasaRestStatus.UNREACHABLE)
-

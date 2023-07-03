@@ -1,21 +1,56 @@
 
-from uuid import uuid4 as uuidv4
-from typing import List, Optional
 import logging
+from typing import Any, List, Optional
+from uuid import uuid4 as uuidv4
 
 import httpx
-from fastapi import HTTPException, Depends
-from pydantic import parse_obj_as
+from fastapi import Depends, HTTPException
+from pydantic import BaseModel, Extra, parse_obj_as
 
 from abotcore.api import LangcornRestClient
 from abotcore.db import Session, get_session
 
-from ..schemas import (ChatMessageIn, ChatMessageOut, ChatRole,
-                      LangcornRestStatus, LangcornServerStatus,
-                      LangcornStatusOut, LangRequest, LangResponse, Memory)
 from ..models import ChatHistory, UserChatMemory
-
+from ..schemas import (ChatMessageIn, ChatMessageOut, ChatRole, ChatStatusOut,
+                       RestEndpointStatus)
 from .base import ChatServer
+
+
+# Schemas
+
+LangcornRestStatus = RestEndpointStatus
+
+
+class LangcornServerStatus(BaseModel):
+    functions: List[str]
+
+
+class LangcornStatusOut(ChatStatusOut):
+    status: RestEndpointStatus
+
+
+# Taken from Langcorn package.
+# TODO: import as dependency (in services.py) and use
+
+class MemoryData(BaseModel):
+    content: str
+    additional_kwargs: dict[str, Any]
+
+
+class Memory(BaseModel):
+    type: str
+    data: MemoryData
+
+
+class LangRequest(BaseModel, extra=Extra.allow):
+    # Additional fields for input keys
+    memory: List[Memory]
+
+
+class LangResponse(BaseModel):
+    output: str
+    error: str
+    memory: list[Memory]
 
 
 LOGGER = logging.getLogger(__name__)
@@ -54,11 +89,13 @@ class LangcornChatServer(ChatServer):
             except httpx.ReadTimeout:
                 raise HTTPException(500, detail="Langcorn REST service took too long to respond")
             except httpx.HTTPStatusError as e:
-                LOGGER.warning("Failed to respond to the chat message by [%s] \"%s\" due to an exception in Langcorn:", chat_message.sender_id, chat_message.text, exc_info=e)
+                LOGGER.warning(
+                    "Failed to respond to the chat message by [%s] \"%s\" due to an exception in Langcorn:", chat_message.sender_id, chat_message.text, exc_info=e)
                 LOGGER.info("Content received (for above exception):\n%s", e.request.content.decode(errors='replace'))
                 raise HTTPException(500, detail="Failed to generate response: %s" % str(e))
             except Exception as e:
-                LOGGER.exception("Failed to respond to the chat message by [%s] \"%s\" due to an exception:", chat_message.sender_id, chat_message.text)
+                LOGGER.exception(
+                    "Failed to respond to the chat message by [%s] \"%s\" due to an exception:", chat_message.sender_id, chat_message.text)
                 raise HTTPException(500, detail="Failed to generate response: %s" % str(e))
 
     async def get_status(self) -> LangcornStatusOut:
@@ -76,7 +113,6 @@ class LangcornChatServer(ChatServer):
             except (httpx.ConnectError, httpx.ReadTimeout) as e:
                 LOGGER.warning("Langcorn chat endpoint was unreachable when requested:", exc_info=e)
                 return LangcornStatusOut(status=LangcornRestStatus.UNREACHABLE)
-
 
     def _map_response_to_message(self, msg: LangResponse, user_message: ChatMessageIn) -> List[ChatMessageOut]:
         # Langcorn just returns a single message
