@@ -23,19 +23,19 @@ class DummyChatServer(ChatServer):
         chat_message.text = chat_message.text.lower()
 
         if 'test' in chat_message.text:
-            return ChatMessageOut(
+            return [ChatMessageOut(
                 recipient_id=chat_message.sender_id,
                 text="Test message response.\nMarkdown working? *Yes*.\n[Link test](http://www.google.com).\n\n__Special text__"
-            )
+            )]
 
         elif 'ping' in chat_message.text:
-            return ChatMessageOut(
+            return [ChatMessageOut(
                 recipient_id=chat_message.sender_id,
                 text="Pong"
-            )
+            )]
 
         elif 'button' in chat_message.text:
-            return ChatMessageOut(
+            return [ChatMessageOut(
                 recipient_id=chat_message.sender_id,
                 text="Message with buttons",
                 buttons=[
@@ -52,10 +52,10 @@ class DummyChatServer(ChatServer):
                         'payload': 'btn_many'
                     }
                 ]
-            )
+            )]
 
         elif 'btn_many' in chat_message.text:
-            return ChatMessageOut(
+            return [ChatMessageOut(
                 recipient_id=chat_message.sender_id,
                 text="Message with many buttons",
                 buttons=[
@@ -65,7 +65,7 @@ class DummyChatServer(ChatServer):
                     }
                     for i in range(10)
                 ]
-            )
+            )]
 
     async def get_status(self) -> ChatStatusOut:
         '''Get Langcorn server health'''
