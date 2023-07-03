@@ -8,6 +8,7 @@ from .schemas import (
 )
 from .services import (
     make_chat_service_class,
+    DummyChatServer,
     RasaChatServer,
     LangcornChatServer
 )
@@ -15,11 +16,11 @@ from .services import (
 from typing import List
 
 
+DummyChatService = make_chat_service_class(DummyChatServer)
 LangcornChatService = make_chat_service_class(LangcornChatServer)
 RASAChatService = make_chat_service_class(RasaChatServer)
 
-
-EnabledChatService = LangcornChatService
+EnabledChatService = DummyChatService
 
 
 # Endpoint router
