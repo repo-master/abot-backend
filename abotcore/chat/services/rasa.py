@@ -24,6 +24,8 @@ class RasaStatusOut(ChatStatusOut):
 # Chat server with Rasa REST API
 
 class RasaChatServer(ChatServer):
+    name = "rasa"
+
     async def send_chat_message(self, chat_message: ChatMessageIn) -> List[ChatMessageOut]:
         async with RasaRestClient() as client:
             try:

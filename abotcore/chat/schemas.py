@@ -40,3 +40,12 @@ class ChatRole(Enum):
 
 class ChatStatusOut(BaseModel):
     status: RestEndpointStatus
+
+
+class MemoryData(BaseModel):
+    content: str
+    additional_kwargs: dict[str, Any]
+
+class Memory(BaseModel):
+    type: str
+    data: MemoryData

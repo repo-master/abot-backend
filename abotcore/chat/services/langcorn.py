@@ -1,6 +1,6 @@
 
 import logging
-from typing import Any, List, Optional
+from typing import List, Optional
 from uuid import uuid4 as uuidv4
 
 import httpx
@@ -12,7 +12,7 @@ from abotcore.db import Session, get_session
 
 from ..models import ChatHistory, UserChatMemory
 from ..schemas import (ChatMessageIn, ChatMessageOut, ChatRole, ChatStatusOut,
-                       RestEndpointStatus)
+                       RestEndpointStatus, Memory)
 from .base import ChatServer
 
 
@@ -32,16 +32,6 @@ class LangcornStatusOut(ChatStatusOut):
 # Taken from Langcorn package.
 # TODO: import as dependency (in services.py) and use
 
-class MemoryData(BaseModel):
-    content: str
-    additional_kwargs: dict[str, Any]
-
-
-class Memory(BaseModel):
-    type: str
-    data: MemoryData
-
-
 class LangRequest(BaseModel, extra=Extra.allow):
     # Additional fields for input keys
     memory: List[Memory]
@@ -57,6 +47,8 @@ LOGGER = logging.getLogger(__name__)
 
 
 class LangcornChatServer(ChatServer):
+    name = "langcorn"
+
     CHAIN_NAME = 'genesis.chat_chain'
     INPUT_VAR = 'input'
 

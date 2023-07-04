@@ -22,6 +22,9 @@ class EndpointSettings(BaseBackendSettings):
     actions_endpoint_base: AnyUrl = "http://localhost:5055"
     langcorn_endpoint_base: AnyUrl = "http://localhost:7860"
 
+class ChatEndpointSettings(BaseBackendSettings):
+    chat_endpoint_server: str = 'chathook_dummy'
+    """Which endpoint server handles the /chat endpoint (prefix with chathook_)"""
 
 class DBSettings(BaseBackendSettings):
     # DB to connect to (from environment variable). Default is in-memory DB (content will be lost!)

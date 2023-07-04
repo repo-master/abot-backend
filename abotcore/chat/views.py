@@ -7,24 +7,40 @@ from .schemas import (
     ChatStatusOut
 )
 from .services import (
-    make_chat_service_class,
+    ChatServer,
     DummyChatServer,
     RasaChatServer,
     LangcornChatServer
 )
 
-from typing import List
+from typing import List, Dict, Type
 
-
-DummyChatService = make_chat_service_class(DummyChatServer)
-LangcornChatService = make_chat_service_class(LangcornChatServer)
-RASAChatService = make_chat_service_class(RasaChatServer)
-
-EnabledChatService = DummyChatService
+EnabledChatService = DummyChatServer
 
 
 # Endpoint router
 router = APIRouter(prefix='/chat')
+chat_webhook = APIRouter(prefix='/webhook')
+
+
+service_hook_map: Dict[str, Type[ChatServer]] = {
+    service.name: service for service in [DummyChatServer, LangcornChatServer, RasaChatServer]
+}
+
+def chat_server_hook_class(service: str) -> Type[ChatServer]:
+    ServiceClass = service_hook_map[service]
+    class ChatServerHook(metaclass=ServiceClass):
+        def __init__(self, service: ServiceClass = Depends(ServiceClass)):
+            pass
+    return ChatServerHook
+
+# Chat endpoint service webhook
+@chat_webhook.post("/{service:str}", response_model_exclude_unset=True)
+async def chat_service_hook(msg: ChatMessageIn, chat_service: ChatServer = Depends(chat_server_hook_class)) -> List[ChatMessageOut]:
+    '''Get the chat service's response to the user's message'''
+    print(chat_service)
+    print(chat_service.name)
+    return await chat_service.send_chat_message(msg)
 
 
 # Default route (/chat)
@@ -44,3 +60,5 @@ async def chat(msg: ChatMessageIn, chat_service: EnabledChatService = Depends(En
 async def status(chat_service: EnabledChatService = Depends(EnabledChatService)) -> ChatStatusOut:
     '''Heartbeat and status enquiry'''
     return await chat_service.get_status()
+
+router.include_router(chat_webhook)

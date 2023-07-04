@@ -13,6 +13,8 @@ LOGGER = logging.getLogger(__name__)
 
 
 class DummyChatServer(ChatServer):
+    name = "dummy"
+
     def __init__(self) -> None:
         pass
 
@@ -72,6 +74,10 @@ class DummyChatServer(ChatServer):
                     for i in range(10)
                 ]
             )]
+        return [ChatMessageOut(
+            recipient_id=chat_message.sender_id,
+            text="Don't know how to handle message \"%s\"" % chat_message.text
+        )]
 
     async def get_status(self) -> ChatStatusOut:
         '''Get Langcorn server health'''
