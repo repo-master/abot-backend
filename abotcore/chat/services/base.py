@@ -6,8 +6,6 @@ from ..schemas import (ChatMessageIn, ChatMessageOut, ChatStatusOut,
 
 
 class ChatServer:
-    name = "stub"
-
     async def send_chat_message(self, chat_message: ChatMessageIn) -> List[ChatMessageOut]:
         return []
 
@@ -15,3 +13,6 @@ class ChatServer:
         return {
             "status": RestEndpointStatus.UNREACHABLE
         }
+
+    def __repr__(self) -> str:
+        return 'stub'

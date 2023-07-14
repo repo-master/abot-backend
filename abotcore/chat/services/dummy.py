@@ -13,10 +13,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class DummyChatServer(ChatServer):
-    name = "dummy"
-
     def __init__(self) -> None:
         pass
+
+    def __repr__(self) -> str:
+        return 'dummy'
 
     async def send_chat_message(self, chat_message: ChatMessageIn) -> List[ChatMessageOut]:
         if chat_message.sender_id is None:

@@ -47,13 +47,14 @@ LOGGER = logging.getLogger(__name__)
 
 
 class LangcornChatServer(ChatServer):
-    name = "langcorn"
-
-    CHAIN_NAME = 'genesis.chat_chain'
+    CHAIN_NAME = 'logic.chain'
     INPUT_VAR = 'input'
 
     def __init__(self, session: Session = Depends(get_session)) -> None:
         self.async_session = session
+
+    def __repr__(self) -> str:
+        return 'langcorn'
 
     async def send_chat_message(self, chat_message: ChatMessageIn) -> List[ChatMessageOut]:
         if chat_message.sender_id is None:
