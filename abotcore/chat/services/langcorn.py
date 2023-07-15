@@ -3,6 +3,7 @@ import logging
 from typing import List, Optional
 from uuid import uuid4 as uuidv4
 
+import json
 import httpx
 from fastapi import Depends, HTTPException
 from pydantic import BaseModel, Extra, parse_obj_as
@@ -110,10 +111,13 @@ class LangcornChatServer(ChatServer):
     def _map_response_to_message(self, msg: LangResponse, user_message: ChatMessageIn) -> List[ChatMessageOut]:
         # Langcorn just returns a single message
         # TODO: Maybe split text every paragraph (and keep all assets for first message, buttons for last)
+        msg = json.loads(msg.output)
+        if isinstance(msg, str):
+            msg = dict(text=msg)
         return [
             ChatMessageOut(
                 recipient_id=user_message.sender_id,
-                text=msg.output
+                **msg
             )
         ]
 
