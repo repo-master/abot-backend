@@ -113,10 +113,10 @@ class LangcornChatServer(ChatServer):
     def _map_response_to_message(self, msg: LangResponse, user_message: ChatMessageIn) -> List[ChatMessageOut]:
         # Langcorn just returns a single message
         # TODO: Maybe split text every paragraph (and keep all assets for first message, buttons for last)
-        LOGGER.info("Langcorn reply (%s): %s", str(type(msg.output)), msg.output)
-        msg = json.loads(msg.output)
-        if isinstance(msg, str):
-            msg = dict(text=msg)
+        LOGGER.info("Langcorn reply (%s): %s", user_message.sender_id, msg.output)
+        # msg = json.loads(msg.output)
+        # if isinstance(msg, str):
+        msg = dict(text=msg.output)
         return [
             ChatMessageOut(
                 recipient_id=user_message.sender_id,
