@@ -61,6 +61,8 @@ class LangcornChatServer(ChatServer):
         if chat_message.sender_id is None:
             chat_message.sender_id = uuidv4().hex
 
+        LOGGER.info("Sending message with sender id %s: %s", chat_message.sender_id, chat_message.text)
+
         memory: List[Memory] = await self._get_user_memory(chat_message.sender_id)
 
         await self._insert_chat_history_user(chat_message)
