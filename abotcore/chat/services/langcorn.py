@@ -38,7 +38,7 @@ class LangRequest(BaseModel, extra=Extra.allow):
     memory: List[Memory]
 
 
-class LangResponse(BaseModel):
+class LangResponse(BaseModel, extra=Extra.allow):
     output: str
     error: str
     memory: list[Memory]
@@ -53,9 +53,6 @@ class LangcornChatServer(ChatServer):
 
     def __init__(self, session: Session = Depends(get_session)) -> None:
         self.async_session = session
-
-    def __repr__(self) -> str:
-        return 'langcorn'
 
     async def send_chat_message(self, chat_message: ChatMessageIn) -> List[ChatMessageOut]:
         if chat_message.sender_id is None:
@@ -113,14 +110,12 @@ class LangcornChatServer(ChatServer):
     def _map_response_to_message(self, msg: LangResponse, user_message: ChatMessageIn) -> List[ChatMessageOut]:
         # Langcorn just returns a single message
         # TODO: Maybe split text every paragraph (and keep all assets for first message, buttons for last)
-        LOGGER.info("Langcorn reply (%s): %s", user_message.sender_id, msg.output)
-        # msg = json.loads(msg.output)
-        # if isinstance(msg, str):
-        msg = dict(text=msg.output)
+        LOGGER.info("Langcorn reply (%s) {%s}: %s", user_message.sender_id, ','.join(msg._calculate_keys()), msg.output)
+        response = msg.dict(exclude={"error", "memory"})
         return [
             ChatMessageOut(
                 recipient_id=user_message.sender_id,
-                **msg
+                **response
             )
         ]
 

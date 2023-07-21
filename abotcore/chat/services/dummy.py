@@ -16,9 +16,6 @@ class DummyChatServer(ChatServer):
     def __init__(self) -> None:
         pass
 
-    def __repr__(self) -> str:
-        return 'dummy'
-
     async def send_chat_message(self, chat_message: ChatMessageIn) -> List[ChatMessageOut]:
         if chat_message.sender_id is None:
             chat_message.sender_id = uuidv4().hex
