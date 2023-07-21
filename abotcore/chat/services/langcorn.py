@@ -1,6 +1,6 @@
 
 import logging
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from uuid import uuid4 as uuidv4
 
 import json
@@ -39,8 +39,8 @@ class LangRequest(BaseModel, extra=Extra.allow):
 
 
 class LangResponse(BaseModel, extra=Extra.allow):
-    output: str
-    error: str
+    output: Optional[Dict[str, Any]]
+    error: Optional[str]
     memory: list[Memory]
 
 
@@ -111,10 +111,12 @@ class LangcornChatServer(ChatServer):
         # Langcorn just returns a single message
         # TODO: Maybe split text every paragraph (and keep all assets for first message, buttons for last)
         LOGGER.info("Langcorn reply (%s) {%s}: %s", user_message.sender_id, ','.join(msg._calculate_keys()), msg.output)
-        response = msg.dict(exclude={"error", "memory"})
+        response = msg.output.copy()
+        text = response.pop(self.output_key)
         return [
             ChatMessageOut(
                 recipient_id=user_message.sender_id,
+                text=text,
                 **response
             )
         ]
@@ -133,7 +135,7 @@ class LangcornChatServer(ChatServer):
             chat_handler=self.CHAIN_NAME,
             message_client_id=user_message.sender_id,
             message_role=ChatRole.AI,
-            message_content=ai_message.output
+            message_content=ai_message.output.get(self.output_key)
         ))
         await self.async_session.commit()
 
