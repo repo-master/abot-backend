@@ -41,7 +41,7 @@ class LangRequest(BaseModel, extra=Extra.allow):
 class LangResponse(BaseModel, extra=Extra.allow):
     output: Optional[Dict[str, Any]]
     error: Optional[str]
-    memory: list[Memory]
+    memory: List[Memory]
 
 
 LOGGER = logging.getLogger(__name__)
@@ -50,6 +50,7 @@ LOGGER = logging.getLogger(__name__)
 class LangcornChatServer(ChatServer):
     CHAIN_NAME = 'logic.chain'
     INPUT_VAR = 'input'
+    output_key: str = 'output'
 
     def __init__(self, session: Session = Depends(get_session)) -> None:
         self.async_session = session
