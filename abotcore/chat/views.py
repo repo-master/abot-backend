@@ -60,7 +60,7 @@ async def chat_service_hook(
 
 # Chat endpoint status webhook
 @router.get("/status")
-@chat_webhook.post("/{service:str}/status")
+@chat_webhook.get("/{service:str}/status")
 async def chat_service_hook(
     server: BaseChatServer = Depends(get_chat_server),
 ) -> ChatStatusOut:
