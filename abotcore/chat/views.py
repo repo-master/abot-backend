@@ -45,7 +45,7 @@ async def get_chat_server(
 
 # Default route (/chat)
 # Chat endpoint service webhook
-@router.post("", response_model_exclude_unset=True, response_model_exclude_none=True)
+@router.post("", response_model_exclude_unset=True, response_model_exclude_none=True, response_model_by_alias=False)
 @chat_webhook.post(
     "/{service:str}",
     response_model_exclude_unset=True,
