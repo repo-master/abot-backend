@@ -24,7 +24,7 @@ class ChatMessageOut(
     ChatMessage, extra=Extra.ignore, allow_population_by_field_name=True
 ):
     recipient_id: str
-    text: Optional[str] = Field(validation_alias="output")
+    text: Optional[str] = Field(alias="output")
     image: Optional[str] = None
     buttons: Optional[List[Dict[str, Any]]] = None
     attachment: Optional[str] = None
