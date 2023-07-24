@@ -1,59 +1,71 @@
+from fastapi import APIRouter, Depends, Path
 
-from fastapi import APIRouter, Depends
-
-from .schemas import (
-    ChatMessageIn,
-    ChatMessageOut,
-    ChatStatusOut
-)
+from .schemas import ChatMessageIn, ChatMessageOut, ChatStatusOut
 from .services import (
-    ChatServer,
+    BaseChatServer,
     DummyChatServer,
     RasaChatServer,
-    LangcornChatServer
+    LangcornChatServer,
 )
 
-from enum import Enum
-from typing import List, Dict, Type
+from abotcore.db import Session, get_session
+from abotcore.schemas import ChatServiceType
+from abotcore.config import ChatEndpointSettings
 
-EnabledChatService = LangcornChatServer
+from typing import List, Dict, Callable
+from functools import partial
+
+
+_base_endpoint = ChatEndpointSettings()
 
 
 # Endpoint router
-router = APIRouter(prefix='/chat')
-chat_webhook = APIRouter(prefix='/webhook')
+router = APIRouter(prefix="/chat")
+chat_webhook = APIRouter(prefix="/webhook")
 
 
-class ChatService(str, Enum):
-    langcorn = LangcornChatServer
-    dummy = DummyChatServer
-    rasa = RasaChatServer
+CHAT_SERVICE_MAP: Dict[str, Callable[..., BaseChatServer]] = {
+    ChatServiceType.DUMMY: DummyChatServer,
+    ChatServiceType.RASA: RasaChatServer,
+    ChatServiceType.LANGCHAIN_GENESIS: partial(
+        LangcornChatServer, chain_name="genesis.langcorn:chain"
+    ),
+    ChatServiceType.LANGCHAIN_FUNCTION: partial(
+        LangcornChatServer, chain_name="logic:chain"
+    ),
+}
 
 
-# Chat endpoint service webhook
-# @chat_webhook.post("/{service:str}", response_model_exclude_unset=True)
-# async def chat_service_hook(msg: ChatMessageIn, service: ChatService) -> List[ChatMessageOut]:
-#     '''Get the chat service's response to the user's message'''
-#     print(service, type(service))
-#     return await service.send_chat_message(msg)
+async def get_chat_server(
+    service: ChatServiceType = _base_endpoint.chat_endpoint_server,
+    abot_dbsession: Session = Depends(get_session),
+) -> BaseChatServer:
+    return CHAT_SERVICE_MAP[service](dbsession=abot_dbsession)
 
 
 # Default route (/chat)
-@router.post("", response_model_exclude_unset=True)
-async def chat(msg: ChatMessageIn, chat_service: EnabledChatService = Depends(EnabledChatService)) -> List[ChatMessageOut]:
-    '''Get the chat model's response to the user's message'''
+# Chat endpoint service webhook
+@router.post("", response_model_exclude_unset=True, response_model_exclude_none=True)
+@chat_webhook.post(
+    "/{service:str}",
+    response_model_exclude_unset=True,
+    response_model_exclude_none=True,
+)
+async def chat_service_hook(
+    msg: ChatMessageIn, server: BaseChatServer = Depends(get_chat_server)
+) -> List[ChatMessageOut]:
+    """Get the selected chat server's response to the user's message"""
+    return await server(msg)
 
-    # Generate responses from the Rasa Agent, wait for all replies and send back as JSON.
-    # sender_id is optional in this case.
-    # Send back all generated responses at once
-    return await chat_service.send_chat_message(msg)
 
-# Used as a heartbeat and general status enquiry (/chat/status)
-
-
+# Chat endpoint status webhook
 @router.get("/status")
-async def status(chat_service: EnabledChatService = Depends(EnabledChatService)) -> ChatStatusOut:
-    '''Heartbeat and status enquiry'''
-    return await chat_service.get_status()
+@chat_webhook.post("/{service:str}/status")
+async def chat_service_hook(
+    server: BaseChatServer = Depends(get_chat_server),
+) -> ChatStatusOut:
+    """Heartbeat and status enquiry of selected server"""
+    return await server.get_status()
+
 
 router.include_router(chat_webhook)

@@ -1,5 +1,5 @@
 
-from .base import ChatServer
+from .base import BaseChatServer
 
 from .dummy import DummyChatServer
 from .rasa import RasaChatServer

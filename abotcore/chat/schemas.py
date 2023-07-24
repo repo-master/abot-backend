@@ -1,6 +1,6 @@
-'''Data validation schemas (Pydantic) used by chat endpoints'''
+"""Data validation schemas (Pydantic) used by chat endpoints"""
 
-from pydantic import BaseModel, Extra
+from pydantic import BaseModel, Extra, Field
 from typing import Optional, Union, Dict, List, Any
 from enum import Enum
 
@@ -12,16 +12,19 @@ class ChatMessage(BaseModel, extra=Extra.forbid):
 
 
 class ChatMessageIn(ChatMessage):
-    '''
+    """
     Represents a message sent by the user (only text is allowed).
     Content is given as input to a `UserMessage` class instance
-    '''
+    """
+
     sender_id: Optional[str] = None
 
 
-class ChatMessageOut(ChatMessage):
+class ChatMessageOut(
+    ChatMessage, extra=Extra.ignore, allow_population_by_field_name=True
+):
     recipient_id: str
-    text: Optional[str] = None
+    text: Optional[str] = Field(alias="output")
     image: Optional[str] = None
     buttons: Optional[List[Dict[str, Any]]] = None
     attachment: Optional[str] = None
@@ -29,13 +32,13 @@ class ChatMessageOut(ChatMessage):
 
 
 class RestEndpointStatus(Enum):
-    OK = 'ok'
-    UNREACHABLE = 'unreachable'
+    OK = "ok"
+    UNREACHABLE = "unreachable"
 
 
 class ChatRole(Enum):
-    HUMAN = 'human',
-    AI = 'ai'
+    HUMAN = ("human",)
+    AI = "ai"
 
 
 class ChatStatusOut(BaseModel):
@@ -45,6 +48,7 @@ class ChatStatusOut(BaseModel):
 class MemoryData(BaseModel):
     content: str
     additional_kwargs: dict[str, Any]
+
 
 class Memory(BaseModel):
     type: str
