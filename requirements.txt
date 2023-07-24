@@ -1,5 +1,5 @@
-fastapi~=0.100.0
-pydantic[dotenv]~=2.0.3
+fastapi~=0.95.1
+pydantic[dotenv]~=1.10.11
 uvicorn~=0.22.0
 SQLAlchemy~=2.0.12
 aiosqlite~=0.19.0
