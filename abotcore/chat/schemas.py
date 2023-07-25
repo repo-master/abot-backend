@@ -7,6 +7,11 @@ from enum import Enum
 # Base
 
 
+class ChatButton(BaseModel):
+    title: str
+    payload: str
+
+
 class ChatMessage(BaseModel, extra=Extra.forbid):
     text: str
 
@@ -26,7 +31,7 @@ class ChatMessageOut(
     recipient_id: str
     text: Optional[str] = Field(alias="output")
     image: Optional[str] = None
-    buttons: Optional[List[Dict[str, Any]]] = None
+    buttons: Optional[List[ChatButton]] = None
     attachment: Optional[str] = None
     custom: Optional[Dict[str, Any]] = None
 
