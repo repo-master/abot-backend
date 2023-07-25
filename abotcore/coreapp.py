@@ -1,3 +1,5 @@
+'''Application to host Abot endpoints of chat, memory, history auth, etc.'''
+
 import logging
 
 from fastapi import FastAPI, Request
@@ -5,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 # Routers
-from abotcore import chat, statistics, fulfillment
+from abotcore import chat
 from abotcore.config import ServerSettings
 
 
@@ -86,10 +88,5 @@ def create_app() -> FastAPI:
 
     ##### PUBLIC #####
     app.include_router(chat.router)
-
-    ##### PRIVATE #####
-    app.include_router(statistics.router)
-
-    app.include_router(fulfillment.router)
 
     return app

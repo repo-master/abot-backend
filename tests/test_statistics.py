@@ -1,7 +1,7 @@
 
 from fastapi.testclient import TestClient
 
-from abotcore import create_app
+from abotcore.coreapp import create_app
 
 import unittest
 

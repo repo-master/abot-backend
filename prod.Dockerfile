@@ -4,7 +4,7 @@ FROM tiangolo/uvicorn-gunicorn-fastapi:python3.9
 
 # Define default environment variables
 ENV PORT=8080
-ENV APP_MODULE=abotcore:create_app()
+ENV APP_MODULE=abotcore:create_coreapp()
 ENV LOG_LEVEL=debug
 ENV WEB_CONCURRENCY=2
 
