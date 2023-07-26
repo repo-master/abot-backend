@@ -150,3 +150,6 @@ dmypy.json
 
 # Ignore all rasa files and folders
 data/
+
+# Static cache serve folder
+static/cache/

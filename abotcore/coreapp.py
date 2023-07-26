@@ -1,4 +1,4 @@
-'''Application to host Abot endpoints of chat, memory, history auth, etc.'''
+"""Application to host Abot endpoints of chat, memory, history auth, etc."""
 
 import logging
 
@@ -12,7 +12,7 @@ from abotcore.config import ServerSettings
 
 
 def create_app() -> FastAPI:
-    ### Application instance ###
+    """Application instance"""
     app = FastAPI()
     settings = ServerSettings()
 
@@ -20,7 +20,7 @@ def create_app() -> FastAPI:
 
     logger = logging.getLogger(__name__)
 
-    ### Middleware ###
+    """ Middleware """
 
     # Enable cross-origin request, from any domain (*)
     app.add_middleware(
@@ -31,7 +31,18 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    ### App events ###
+    # Static folder serve
+    if settings.static_serve_directory is not None:
+        from fastapi.staticfiles import StaticFiles
+
+        app.mount(
+            "/static",
+            StaticFiles(directory=settings.static_serve_directory),
+            name="static",
+        )
+
+    """ App events """
+
     @app.on_event("startup")
     async def init_tables():
         import asyncio
@@ -39,7 +50,6 @@ def create_app() -> FastAPI:
             Base,
             Connection,
             get_engine,
-            get_sessionmaker,
             get_schema_mapping,
         )
         from sqlalchemy.schema import CreateSchema
@@ -73,7 +83,7 @@ def create_app() -> FastAPI:
             # async with sessionmaker() as db:
             #     await fulfillment.FulfillmentSync(db).sync_all(True)
 
-    ### Exception handlers ###
+    """ Exception handlers """
 
     @app.exception_handler(OSError)
     async def unhandled_oserror_exception_handler(request: Request, exc: OSError):
@@ -82,11 +92,9 @@ def create_app() -> FastAPI:
             status_code=500, content={"exception": "OSError", "detail": str(exc)}
         )
 
-    ### Routes ###
+    """ Routes """
 
     # Add routes to the application
-
-    ##### PUBLIC #####
     app.include_router(chat.router)
 
     return app

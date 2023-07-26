@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Path
+from fastapi import APIRouter, Depends
 
 from .schemas import ChatMessageIn, ChatMessageOut, ChatStatusOut
 from .services import (
@@ -10,7 +10,7 @@ from .services import (
 
 from abotcore.db import Session, get_session
 from abotcore.schemas import ChatServiceType
-from abotcore.config import ChatEndpointSettings
+from abotcore.config import ChatEndpointSettings, get_cache_base, joinurl
 
 from typing import List, Dict, Callable
 from functools import partial
@@ -61,11 +61,19 @@ async def chat_service_hook(
 # Chat endpoint status webhook
 @router.get("/status")
 @chat_webhook.get("/{service:str}/status")
-async def chat_service_hook(
+async def chat_service_status(
     server: BaseChatServer = Depends(get_chat_server),
 ) -> ChatStatusOut:
     """Heartbeat and status enquiry of selected server"""
     return await server.get_status()
+
+
+@router.post("/cache")
+async def gen_cache(info: dict) -> dict:
+    cache_base_url = get_cache_base()
+    return {
+        "url": joinurl(cache_base_url, "test.pdf")
+    }
 
 
 router.include_router(chat_webhook)
