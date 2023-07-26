@@ -10,6 +10,9 @@ from .base import BaseChatServer
 LOGGER = logging.getLogger(__name__)
 
 
+TEST_MESSAGE = "Test message response.\nMarkdown working? *Yes*.\n[Link test](http://www.google.com).\n\n__Special text__"  # noqa: E501
+
+
 class DummyChatServer(BaseChatServer):
     async def send_chat_message(
         self, chat_message: ChatMessageIn
@@ -23,7 +26,7 @@ class DummyChatServer(BaseChatServer):
             return [
                 ChatMessageOut(
                     recipient_id=chat_message.sender_id,
-                    text="Test message response.\nMarkdown working? *Yes*.\n[Link test](http://www.google.com).\n\n__Special text__",
+                    text=TEST_MESSAGE,
                 )
             ]
 

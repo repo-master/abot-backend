@@ -1,7 +1,7 @@
 """Data validation schemas (Pydantic) used by chat endpoints"""
 
 from pydantic import BaseModel, Extra, Field
-from typing import Optional, Union, Dict, List, Any
+from typing import Optional, Dict, List, Any
 from enum import Enum
 
 # Base

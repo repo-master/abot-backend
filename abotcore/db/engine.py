@@ -12,7 +12,7 @@ from abotcore.config import DBSettings
 
 from functools import lru_cache
 
-from typing import Optional, Dict
+from typing import Dict
 
 
 Session = AsyncSession

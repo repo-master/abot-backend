@@ -1,4 +1,4 @@
-'''Application to host the [private] Statistics API endpoints'''
+"""Application to host the [private] Statistics API endpoints"""
 
 import logging
 
@@ -12,7 +12,7 @@ from abotcore.config import ServerSettings
 
 
 def create_app() -> FastAPI:
-    ### Application instance ###
+    """Application instance"""
     app = FastAPI()
     settings = ServerSettings()
 
@@ -20,7 +20,7 @@ def create_app() -> FastAPI:
 
     logger = logging.getLogger(__name__)
 
-    ### Middleware ###
+    """ Middleware """
 
     # Enable cross-origin request, from any domain (*)
     app.add_middleware(
@@ -31,7 +31,7 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    ### Exception handlers ###
+    """ Exception handlers """
 
     @app.exception_handler(OSError)
     async def unhandled_oserror_exception_handler(request: Request, exc: OSError):
@@ -40,7 +40,7 @@ def create_app() -> FastAPI:
             status_code=500, content={"exception": "OSError", "detail": str(exc)}
         )
 
-    ### Routes ###
+    """ Routes """
 
     # Add routes to the application
 

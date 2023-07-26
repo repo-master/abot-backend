@@ -3,7 +3,7 @@ from typing import List, Optional, Dict, Any
 from uuid import uuid4 as uuidv4
 
 import httpx
-from fastapi import Depends, HTTPException
+from fastapi import HTTPException
 from pydantic import BaseModel, Extra, Field, parse_obj_as
 
 from abotcore.api import LangcornRestClient
