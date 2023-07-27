@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, UploadFile
+
+import os
+from tempfile import mkstemp
 
 from .schemas import ChatMessageIn, ChatMessageOut, ChatStatusOut
 from .services import (
@@ -10,7 +13,11 @@ from .services import (
 
 from abotcore.db import Session, get_session
 from abotcore.schemas import ChatServiceType
-from abotcore.config import ChatEndpointSettings, get_cache_base, joinurl
+from abotcore.config import (
+    ChatEndpointSettings,
+    FileCacheServerSettings,
+    joinurl,
+)
 
 from typing import List, Dict, Callable
 from functools import partial
@@ -45,7 +52,12 @@ async def get_chat_server(
 
 # Default route (/chat)
 # Chat endpoint service webhook
-@router.post("", response_model_exclude_unset=True, response_model_exclude_none=True, response_model_by_alias=False)
+@router.post(
+    "",
+    response_model_exclude_unset=True,
+    response_model_exclude_none=True,
+    response_model_by_alias=False,
+)
 @chat_webhook.post(
     "/{service:str}",
     response_model_exclude_unset=True,
@@ -68,12 +80,33 @@ async def chat_service_status(
     return await server.get_status()
 
 
+def resolve_cache_file_public_url(cache_save: str, file_path: str):
+    cache_base_url = FileCacheServerSettings.get_cache_base()
+    # cache_save must be the same directory that is served by cache_base_url
+
+    return joinurl(cache_base_url, os.path.relpath(file_path, cache_save))
+
+
 @router.post("/cache")
-async def gen_cache(info: dict) -> dict:
-    cache_base_url = get_cache_base()
-    return {
-        "url": joinurl(cache_base_url, "test.pdf")
-    }
+async def gen_cache(file: UploadFile) -> dict:
+    cache_save = FileCacheServerSettings.get_cache_storage_path()
+
+    if cache_save is None:
+        return HTTPException(501, detail="Cache was not set-up, can't create the file.")
+
+    if not cache_save.exists():
+        return HTTPException(501, detail="Cache storage directory isn't properly initialized, can't create the file.")
+
+    in_fname = file.filename or 'download'
+
+    tmp_fd, file_path = mkstemp(dir=cache_save, suffix="_%s" % in_fname)
+
+    with os.fdopen(tmp_fd, "wb") as f:
+        f.write(await file.read())
+
+    await file.close()
+
+    return {"url": resolve_cache_file_public_url(cache_save, file_path)}
 
 
 router.include_router(chat_webhook)
