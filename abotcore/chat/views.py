@@ -101,12 +101,12 @@ async def gen_cache(file: UploadFile) -> dict:
 
     tmp_fd, file_path = mkstemp(dir=cache_save, suffix="_%s" % in_fname)
 
-    with os.fdopen(tmp_fd, "wb") as f:
-        f.write(await file.read())
-
     # Grant RW to owner, groups and others
     if hasattr(os, 'fchmod'):
         os.fchmod(tmp_fd, 0o666)
+
+    with os.fdopen(tmp_fd, "wb") as f:
+        f.write(await file.read())
 
     await file.close()
 
