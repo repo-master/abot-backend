@@ -104,6 +104,10 @@ async def gen_cache(file: UploadFile) -> dict:
     with os.fdopen(tmp_fd, "wb") as f:
         f.write(await file.read())
 
+    # Grant RW to owner, groups and others
+    if hasattr(os, 'fchmod'):
+        os.fchmod(tmp_fd, 0o666)
+
     await file.close()
 
     return {"url": resolve_cache_file_public_url(cache_save, file_path)}
